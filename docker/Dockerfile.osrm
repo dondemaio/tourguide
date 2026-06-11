@@ -1,0 +1,14 @@
+FROM osrm/osrm-backend:latest
+
+# Copy OSM data into container
+COPY data/*.osm.pbf /data/
+
+# Expose OSRM API
+EXPOSE 5000
+
+# Preprocess and start server using MLD routing
+# Example for Switzerland map: replace with your .osm.pbf
+CMD osrm-extract -p /opt/car.lua /data/switzerland-latest.osm.pbf && \
+    osrm-partition /data/switzerland-latest.osrm && \
+    osrm-customize /data/switzerland-latest.osrm && \
+    osrm-routed --algorithm mld /data/switzerland-latest.osrm

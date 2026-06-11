@@ -1,0 +1,22 @@
+services:
+    tourguide:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile.tourguide
+        volumes:
+            - ../data/waypoints.yaml:/app/data/waypoints.yaml
+            - ../data/config.yaml:/app/config.yaml
+            - ../src:/app/src
+        depends_on:
+            - osrm
+        command: "tail -f /dev/null"
+        tty: true
+    osrm:
+        build:
+            context: ../
+            dockerfile: docker/Dockerfile.osrm
+        ports:
+            - "5000:5000"
+        volumes:
+            - ./git-ignored/osrm:/data
+        restart: unless-stopped

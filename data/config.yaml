@@ -1,0 +1,23 @@
+# Configuration for TourGuide VRPTW solver
+geocoder:
+    backend: nominatim
+    nominatim:
+        delay: 1.0
+
+cost_provider:
+    backend: osrm           # "osrm" or "google"
+    osrm:
+        #base_url: http://localhost:5000
+        base_url: http://osrm:5000
+    google:
+        api_key: "YOUR_GOOGLE_API_KEY_HERE"  # optional if you switch backend
+
+route_renderer:
+    backend: "google-web"   # "osrm" or "geojson" or "google" or "google-web"
+
+solver:
+    time_limit_seconds: 30  # VRPTW solver time limit
+
+# Optional global defaults and settings
+travel_mode: driving
+debug: true
