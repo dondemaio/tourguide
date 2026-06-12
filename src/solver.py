@@ -74,8 +74,9 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
 
     debug_print("Step 6: Adding disjunctions...")
     for group in disjunctions or []:
-        routing.AddDisjunction(group, _must_visit)
-        debug_print(f"\tDisjunction group added: {group}")
+        routing_indices = [manager.NodeToIndex(node) for node in group]
+        routing.AddDisjunction(routing_indices, _must_visit)
+        debug_print(f"\tDisjunction group added: {group} -> {routing_indices}")
     debug_print("Step 6: Disjunctions added.")
 
     # Search parameters

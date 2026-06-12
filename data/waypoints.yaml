@@ -2,8 +2,8 @@ start:
     id: start
     location: "Binzstrasse 24, 8045, Zürich"
     time_window:
-        - "2026-02-01T08:00"
-        - "2026-02-01T08:00"
+        - "2026-06-15T08:00"
+        - "2026-06-15T08:00"
 
 end:
     id: end
@@ -11,8 +11,8 @@ end:
     #location: "Zurich HB"
     location: "Binzstrasse 24, 8045, Zürich"
     time_window:
-        - "2026-02-01T18:00"
-        - "2026-02-01T23:00"
+        - "2026-06-15T18:00"
+        - "2026-06-15T23:00"
 
 stops:
     #location: "8.5417,47.3713"
@@ -23,38 +23,39 @@ stops:
 
     -   id: "Marti Waffen AG"
         location: "Oberdorfstrasse 4, 6340 Baar"
-        time_windows:
-            - [ "2026-02-01T09:00", "2026-02-01T12:00" ]
-            - [ "2026-02-01T13:00", "2026-02-01T17:00" ]
+        opening_hours:
+            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
+                times: [ "09:00-12:00", "13:00-17:00" ]
         service_minutes: 15
 
     -   id: "Grünig + Elmiger AG"
         location: "Industriestrasse 22, 6102 Malters"
         website: "https://www.gruenel.ch/"
         opening_hours:
-            -   days: [ "Mon","Tue","Wed","Fri" ]
-                times: [ "08:30-12:00","13:30-17:30" ]
+            -   days: [ "Mon", "Tue", "Wed", "Fri" ]
+                times: [ "08:30-12:00", "13:30-17:30" ]
             -   days: [ "Thu" ]
-                times: [ "08:30-12:00","13:30-19:00" ]
+                times: [ "08:30-12:00", "13:30-19:00" ]
             -   special: "First Saturday of each month: 08:00-12:00"
-        time_windows:
-            - [ "2026-02-01T13:00","2026-02-01T17:00" ]
         service_minutes: 20
 
     -   id: "Gunlex Waffen"
         location: "Emmetterstrasse 15, 6375 Beckenried"
-        time_windows:
-            - [ "2026-02-01T13:00","2026-02-01T17:00" ]
+        opening_hours:
+            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
+                times: [ "13:00-17:00" ]
         service_minutes: 20
 
     -   id: "Ulrich Waffen"
         location: "Selgis 6, 6436 Muotathal"
-        time_windows:
-            - [ "2026-02-01T13:00","2026-02-01T17:00" ]
+        opening_hours:
+            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
+                times: [ "13:00-17:00" ]
         service_minutes: 20
 
     -   id: "Gun Shop Switzerland GmbH"
         location: "Obere Schwandenstrasse 8, 8833 Samstagern"
-        time_windows:
-            - [ "2026-02-01T13:00","2026-02-01T17:00" ]
+        opening_hours:
+            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
+                times: [ "13:00-17:00" ]
         service_minutes: 30

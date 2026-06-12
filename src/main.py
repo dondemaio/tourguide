@@ -1,10 +1,10 @@
+import argparse
 from copy import deepcopy
 
 import yaml
 from dateutil.parser import isoparse
 
-from backends.factory import create_geocoder, create_cost_provider, create_route_renderer
-from solver import solve_vrptw
+from opening_hours import opening_hours_to_time_windows
 
 # if sys.version_info >= (3, 12):
 #     raise RuntimeError(
@@ -12,12 +12,34 @@ from solver import solve_vrptw
 #         "Please use Python 3.10 or 3.11."
 #     )
 
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config.yaml")
+    parser.add_argument("--waypoints", default="data/waypoints.yaml")
+    return parser.parse_args()
+
+
+def get_stop_time_windows(stop, route_date):
+    if "opening_hours" not in stop:
+        raise ValueError(f"Stop {stop['id']} needs opening_hours")
+
+    windows = opening_hours_to_time_windows(stop["opening_hours"], route_date)
+    if not windows:
+        raise ValueError(
+            f"Stop {stop['id']} has no opening hours for {route_date.isoformat()}"
+        )
+    return windows
+
+
+args = parse_args()
+
 # Load config
-with open("config.yaml") as f:
+with open(args.config) as f:
     cfg = yaml.safe_load(f)
 
 # Load waypoints data
-with open("data/waypoints.yaml") as f:
+with open(args.waypoints) as f:
     data = yaml.safe_load(f)
 
 DEBUG_ACTIVE: bool = cfg.get("debug", False)
@@ -28,18 +50,24 @@ def debug_print(*args):
         print("(Main) ", *args)
 
 
+route_start = isoparse(data["start"]["time_window"][0])
+route_date = route_start.date()
+
 debug_print("Calculating nodes and disjunctions...")
 disjunctions = []
 nodes = [data["start"]]
 for stop in data["stops"]:
+    stop_time_windows = get_stop_time_windows(stop, route_date)
     indices = []
-    for i, tw in enumerate(stop["time_windows"]):
+    for i, tw in enumerate(stop_time_windows):
         node = deepcopy(stop)
         node["id"] = f"{stop['id']}@tw{i}"
         node["time_window"] = tw
+        node.pop("time_windows", None)
+        node.pop("opening_hours", None)
         nodes.append(node)
         # Only create disjunctions for multi-window stops
-        if len(stop["time_windows"]) > 1:
+        if len(stop_time_windows) > 1:
             indices.append(len(nodes) - 1)
     if indices:
         disjunctions.append(indices)
@@ -52,6 +80,9 @@ debug_print("Disjunctions:", disjunctions)
 
 # Extract locations (to feed into geocoder / cost provider)
 locations = [n["location"] for n in nodes]
+
+from backends.factory import create_geocoder, create_cost_provider, create_route_renderer
+from solver import solve_vrptw
 
 # Optional geocoding
 geocoder = create_geocoder(cfg.get("geocoder", {}))
@@ -68,7 +99,7 @@ for i, loc in enumerate(coord_locations):
     debug_print(f"\t{locations[i]} -> {loc}")
 
 # Base timestamp = route start
-base_ts = int(isoparse(data["start"]["time_window"][0]).timestamp())
+base_ts = int(route_start.timestamp())
 
 # Build time windows and service times (OR-Tools expects relative seconds)
 debug_print("Building time windows and service times...")
