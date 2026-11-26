@@ -48,9 +48,11 @@ def prepare_plan(data):
         if "opening_hours" not in stop:
             raise ValueError(f"Stop {stop['id']} needs opening_hours")
         for low, high in opening_hours_to_time_windows(stop["opening_hours"], route_date):
-            earliest = max(start_low, _timestamp(low, zone))
-            latest = min(end_high, _timestamp(high, zone)) - duration
-            if earliest > latest or earliest >= _timestamp(high, zone):
+            opening = _timestamp(low, zone)
+            closing = _timestamp(high, zone)
+            earliest = max(start_low, opening)
+            latest = min(end_high - duration, closing - max(duration, 1))
+            if earliest > latest:
                 continue
             indices.append(len(nodes))
             nodes.append(deepcopy(stop))
