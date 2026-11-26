@@ -41,6 +41,5 @@ def test_calculate_and_render_route(monkeypatch, tmp_path):
                                 "service_seconds": 120, "elapsed_seconds": 600}
     renderer = Mock()
     monkeypatch.setattr("route_service.create_route_renderer", lambda config: renderer)
-    assert render_route(result, config) == renderer.build_route.return_value
-    renderer.build_route.assert_called_once_with(
-        ["Origin", "Example address", "End"], ["1,1", "2,2", "3,3"], [0, 1, 2])
+    assert render_route(result, config) == renderer.render_visits.return_value
+    renderer.render_visits.assert_called_once_with(result["visits"])
