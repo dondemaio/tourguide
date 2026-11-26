@@ -11,18 +11,18 @@ This is a living plan. Deliver small reviewable PRs targeting `develop`, keep th
 | #3 | Test infrastructure and baseline tests |
 | #4 | Solver correctness, mandatory visits, disjunctions and error handling |
 | #5 | Opening-hours processing, validation, clipping and exceptions |
-| #6 | Reusable location database and route references |
+| #6 | Reusable location database, route references, YAML/CSV import and export services |
 | #7 | Structured route results, schedule and travel metrics |
 | #8 | Geocoding and travel cost caching |
 | #9 | Optional destinations and visit priorities |
 | #10 | Date-range optimization (best single day) |
 | #11 | Application service layer and REST API |
 | #12 | Initial Web UI and interactive route map |
-| #13 | Location database management UI |
+| #13 | Location database management UI, file upload, pasted YAML/CSV, import review and export |
 | #14 | Interactive route planning UI |
 | #15 | Destination discovery interface and first backend |
-| #16 | Geographic discovery UI, candidate review and import |
-| #17 | Website-based location enrichment |
+| #16 | Geographic discovery UI, candidate review and reuse of shared import service |
+| #17 | Website-based location enrichment, including incomplete imported records |
 | #18 | Verification and field-level change review UI |
 | #19+ | Advanced optimization, additional backends and multi-day trips |
 
@@ -31,7 +31,7 @@ Move through #2–10 quickly without overengineering. Prepare the shared applica
 ## Product milestones
 
 - **v0.1 — Reliable CLI:** validated inputs, reusable location data, solver correctness and structured results.
-- **v0.2 — Usable Web application:** select and edit locations, define trips, calculate routes, inspect itinerary and map. Retain CLI and Docker deployment.
+- **v0.2 — Usable Web application:** select, edit, import and export locations, define trips, calculate routes, inspect itinerary and map. Retain CLI and Docker deployment.
 - **v0.3 — Destination discovery:** search by term within a geographic area; show candidates with available metadata, review duplicates and import selected entries. Start with bounding box/radius and map viewport; expand area types later. Show coverage and provider limitations.
 - **v0.4 — Location enrichment and verification:** visit optional official websites to find missing addresses, hours and other attributes or detect changes. Present source-backed suggestions for approval; retain provenance and verification dates.
 - **v0.5 — Advanced planning:** distribute visits across independent day trips, then continuous multi-day trips with overnight stays.
@@ -40,6 +40,7 @@ Move through #2–10 quickly without overengineering. Prepare the shared applica
 
 - Planning: fixed appointments, visit completion constraints, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and priorities.
 - Location data: weekly hours, special recurring hours, date-specific exceptions, tags, coordinates, inline destinations and per-trip overrides.
+- Destination exchange: YAML/CSV import and export, incomplete records, validation, duplicate and conflict review, selective approval, lossless YAML round trips, individual/group/full database exports; later JSON and extraction from unstructured chats or emails.
 - Visualization: exact route geometry where available, arrival/departure schedule, waiting and service times, HTML maps, GeoJSON and GPX exports, comparison of alternatives.
 - Discovery: interchangeable providers, geographic filtering, deduplication, provenance, incomplete coverage reporting, optional local OSM indexing.
 - Enrichment: structured website metadata first, contact pages, more complex documents and optional LLM extraction later; no automatic overwrites.
