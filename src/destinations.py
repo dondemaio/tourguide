@@ -88,6 +88,8 @@ class YamlDestinationRepository:
 
 
 def resolve_plan(plan, repository: DestinationRepository):
+    if not isinstance(plan, dict) or not isinstance(plan.get("stops"), list):
+        raise ValueError("Plan requires a stops list")
     resolved = deepcopy(plan)
     stops = []
     records = {record["id"]: record for record in repository.list()}
