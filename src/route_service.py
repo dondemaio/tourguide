@@ -88,9 +88,4 @@ def calculate_route(plan, repository, config):
 
 def render_route(result, config):
     """Render selected visits in their calculated order."""
-    visits = result["visits"]
-    return create_route_renderer(config).build_route(
-        [visit["location"] for visit in visits],
-        [visit["resolved_location"] for visit in visits],
-        list(range(len(visits))),
-    )
+    return create_route_renderer(config).render_visits(result["visits"])
