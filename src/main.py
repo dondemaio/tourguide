@@ -3,6 +3,7 @@ import argparse
 import yaml
 
 from planning import prepare_plan
+from destinations import YamlDestinationRepository, resolve_plan
 
 # if sys.version_info >= (3, 12):
 #     raise RuntimeError(
@@ -15,6 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--waypoints", default="data/waypoints.yaml")
+    parser.add_argument("--destinations", default="data/destinations.yaml")
     return parser.parse_args()
 
 
@@ -36,7 +38,7 @@ def debug_print(*args):
         print("(Main) ", *args)
 
 
-nodes, time_windows, service_times, disjunctions, base_ts = prepare_plan(data)
+nodes, time_windows, service_times, disjunctions, base_ts = prepare_plan(resolve_plan(data, YamlDestinationRepository(args.destinations)))
 
 # Extract locations (to feed into geocoder / cost provider)
 locations = [n["location"] for n in nodes]
