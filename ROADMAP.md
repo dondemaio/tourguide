@@ -1,8 +1,14 @@
 # Tourguide roadmap
 
-This is a living plan. Deliver small reviewable PRs targeting `develop`, keep the application usable, and update this document as scope changes. PR numbers below are provisional.
+This living document describes delivery order and product milestones. See [ARCHITECTURE.md](ARCHITECTURE.md) for requirements and design principles. Future PR numbers and version labels are provisional, not release commitments.
 
-## Near-term sequence
+## Delivery priorities
+
+Move through the foundational work quickly, without overengineering. The Web UI is the primary product interface; the REST API supports automation. Keep the existing CLI only as a transitional entry point, without new CLI-specific features.
+
+Reliable solver behavior, reusable destinations, structured results and callable application logic are the essential prerequisites for the initial Web UI. If caching, optional visits or date-range optimization delay it materially, defer those features. Destination discovery is the next major product priority after the usable Web application.
+
+## Near-term PR sequence
 
 | PR | Scope |
 |---|---|
@@ -11,43 +17,45 @@ This is a living plan. Deliver small reviewable PRs targeting `develop`, keep th
 | #3 | Test infrastructure and baseline tests |
 | #4 | Solver correctness, mandatory visits, disjunctions and error handling |
 | #5 | Opening-hours processing, validation, clipping and exceptions |
-| #6 | Reusable location database, route references, YAML/CSV import and export services |
+| #6 | Reusable destination repository, route references, YAML/CSV import and export services |
 | #7 | Structured route results, schedule and travel metrics |
 | #8 | Geocoding and travel cost caching |
 | #9 | Optional destinations and visit priorities |
 | #10 | Date-range optimization (best single day) |
-| #11 | Application service layer and REST API |
+| #11 | Application service layer and REST API; extract shared logic throughout earlier PRs |
 | #12 | Initial Web UI and interactive route map |
-| #13 | Location database management UI, file upload, pasted YAML/CSV, import review and export |
-| #14 | Interactive route planning UI |
+| #13 | Destination management UI, file upload, pasted YAML/CSV, import review and export |
+| #14 | Interactive route planning UI; complete existing workflows and retire transitional CLI when covered |
 | #15 | Destination discovery interface and first backend |
-| #16 | Geographic discovery UI, candidate review and reuse of shared import service |
-| #17 | Website-based location enrichment, including incomplete imported records |
-| #18 | Verification and field-level change review UI |
-| #19+ | Advanced optimization, additional backends, multi-day trips and collaborative features (order to be decided) |
-
-Move through #2–10 quickly without overengineering. Prepare the shared application layer throughout. If caching, optional visits or date-range planning delay the first Web UI materially, defer them rather than blocking a usable product. The essential UI prerequisites are reliable solver behavior, reusable locations, structured results and callable application logic. Discovery is an early product priority, not a distant optional extension. Keep the existing CLI functional during the foundational PRs as a transitional entry point, but do not add CLI-specific features. The Web UI is the primary product interface and the REST API supports automation and integrations. Retire the CLI once the Web UI covers its existing functionality; retain infrastructure and administration scripts.
+| #16 | Geographic discovery UI, candidate review and shared import workflow |
+| #17 | Website-based enrichment and verification, including incomplete imported records |
+| #18 | Field-level change review UI |
+| #19+ | Advanced planning, additional providers and collaborative features; order to be decided |
 
 ## Product milestones
 
-- **v0.1 — Reliable application foundation:** validated inputs, reusable location data, solver correctness and structured results.
-- **v0.2 — Usable Web application:** select, edit, import and export locations, define trips, calculate routes, inspect itinerary and map. Retain Docker deployment; retire the transitional CLI when its workflows are covered.
-- **v0.3 — Destination discovery:** search by term within a geographic area; show candidates with available metadata, review duplicates and import selected entries. Start with bounding box/radius and map viewport; expand area types later. Show coverage and provider limitations.
-- **v0.4 — Location enrichment and verification:** visit optional official websites to find missing addresses, hours and other attributes or detect changes. Present source-backed suggestions for approval; retain provenance and verification dates.
-- **v0.5 — Advanced planning:** distribute visits across independent day trips, then continuous multi-day trips with overnight stays.
+| Milestone | Completion criteria |
+|---|---|
+| v0.1 — Application foundation | Validated inputs, reusable destinations, import/export services, tested solver constraints and structured results. |
+| v0.2 — Usable Web application | Manage, import and export destinations; define trips; calculate and inspect routes on a map and in an itinerary. Docker deployment and REST API available. Retire the CLI once its workflows are covered. |
+| v0.3 — Destination discovery | Search by term and geographic area, review available candidate metadata and coverage limitations, deduplicate and import selected records. |
+| v0.4 — Enrichment and verification | Retrieve missing information and detect changes from destination websites; review source-backed proposals before applying them. |
+| v0.5 — Advanced planning | Distribute visits across independent day trips, then support continuous multi-day trips with overnight stays. |
 
-## Feature backlog
+The first Web deployment may be restricted to a trusted environment. Shared access requires appropriate security and safe persistence before it is enabled; this is a deployment gate, not a reason to postpone the initial UI. Full collaborative features have no fixed milestone yet.
 
-- Collaboration: shared destination repository, safe concurrent editing, personal and shared route plans, contributor identity and access control, change history and import provenance. Evaluate transactional persistence (e.g. SQLite) when needed; no database or authentication solution is committed yet. Keep YAML/CSV as exchange formats regardless of persistence.
+## Additional backlog
 
-- Planning: fixed appointments, visit completion constraints, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and priorities.
-- Location data: weekly hours, special recurring hours, date-specific exceptions, tags, coordinates, inline destinations and per-trip overrides.
-- Destination exchange: YAML/CSV import and export, incomplete records, validation, duplicate and conflict review, selective approval, lossless YAML round trips, individual/group/full database exports; later JSON and extraction from unstructured chats or emails.
-- Visualization: exact route geometry where available, arrival/departure schedule, waiting and service times, HTML maps, GeoJSON and GPX exports, comparison of alternatives.
-- Discovery: interchangeable providers, geographic filtering, deduplication, provenance, incomplete coverage reporting, optional local OSM indexing.
-- Enrichment: structured website metadata first, contact pages, more complex documents and optional LLM extraction later; no automatic overwrites.
-- Quality: validation, diagnostics, automated tests, provider isolation, reproducibility, caching and documentation.
+Items below extend the near-term scope; their order is not yet agreed.
+
+- Planning: fixed appointments, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and route comparison.
+- Destination exchange: JSON and extraction from unstructured chats or emails.
+- Discovery: additional providers, polygon and administrative-region searches, optional local OSM indexing.
+- Enrichment: complex documents, optional LLM extraction, periodic verification and change reports.
+- Visualization: standalone HTML maps, GeoJSON, GPX and printable itineraries.
+- Collaboration: personal/shared plans, contributor identity, access control, change history and concurrent editing; evaluate transactional persistence as needed.
+- Quality and operations: expanded integration and UI tests, reproducibility, backup/recovery and deployment documentation.
 
 ## Development process
 
-Discuss scope, inspect current implementation, implement on a dedicated branch, test, open a PR to `develop`, and review before merging. Keep PRs focused; document limitations and decisions. Revisit the roadmap after each milestone. Version labels and future PR boundaries are planning proposals rather than release commitments.
+Discuss scope, inspect current implementation, implement on a dedicated branch, test and open a PR targeting `develop`. Review before merging. Keep PRs focused, record limitations and decisions, and update this roadmap as milestones and priorities change. After the first Web product, prefer vertical feature delivery across application services, API and UI rather than long backend-only phases.
