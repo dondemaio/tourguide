@@ -57,6 +57,7 @@ Items below extend the near-term scope; their order is not yet agreed.
 - Candidate inbox: persist incomplete and unverified submissions separately, track source/contributor, normalize and enrich before approval, preserve raw information and review state; common workflow for discovery and manual submissions.
 - Collaboration: mobile-friendly contribution form, invitation-based shared collections, restricted contributor access and review ownership; security and transactional persistence before shared deployment.
 - Discovery: additional providers, polygon and administrative-region searches, optional local OSM indexing.
+- Opening-hours normalization: source-independent deterministic parsing of common free-text expressions, optional multilingual AI-assisted extraction, manual editor and review; preserve original text and never use unverified hours for planning.
 - Enrichment: complex documents, optional LLM extraction, periodic verification and change reports.
 - Visualization: standalone HTML maps, GeoJSON, GPX and printable itineraries.
 - Collaboration: personal/shared plans, contributor identity, access control, change history and concurrent editing; evaluate transactional persistence as needed.
