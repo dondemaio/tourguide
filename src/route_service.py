@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from backends.factory import create_geocoder, create_cost_provider, create_route_renderer
 from destinations import resolve_plan
-from planning import prepare_plan
+from planning import prepare_plan, DEFAULT_PRIORITY, PRIORITY_PENALTY_SECONDS
 from solver import solve_vrptw
 from provider_cache import ProviderCache, geocode_locations, travel_matrix
 
@@ -26,7 +26,7 @@ def build_result(nodes, locations, resolved_locations, solution, base_ts, timezo
             "destination_id": node["id"] if role == "visit" else None,
             "visit_index": node.get("visit_index"),
             "required": node.get("required", True),
-            "priority": node.get("priority", 3) if not node.get("required", True) else None,
+            "priority": node.get("priority", DEFAULT_PRIORITY) if not node.get("required", True) else None,
             "name": node.get("name", node.get("id", role)),
             "location": locations[index],
             "resolved_location": resolved_locations[index],
@@ -54,29 +54,33 @@ def build_result(nodes, locations, resolved_locations, solution, base_ts, timezo
 def calculate_route(plan, repository, config):
     """Calculate a route without CLI or HTTP dependencies."""
     resolved = resolve_plan(plan, repository)
-    nodes, windows, services, groups, base_ts, optional_groups, omitted = prepare_plan(resolved)
+    prepared = prepare_plan(resolved)
+    nodes = prepared.nodes
     locations = [node["location"] for node in nodes]
     geocoder = create_geocoder(config.get("geocoder", {}))
     settings = config.get("cache", {})
     cache = ProviderCache(settings.get("path", "cache/providers.sqlite3")) if settings.get("enabled", False) else None
     resolved_locations = geocode_locations(geocoder, locations, config, cache)
-    if len(resolved_locations) != len(locations):
+    if len(resolved_locations) != len(locations) or any(not isinstance(v, str) or not v.strip() for v in resolved_locations):
         raise ValueError("Geocoder returned an unexpected number of locations")
     provider = create_cost_provider(config)
-    matrix = travel_matrix(provider, resolved_locations, base_ts, config, cache)
-    solution = solve_vrptw(matrix, windows, services,
-                           config["solver"]["time_limit_seconds"], groups,
-                           config.get("debug", False), optional_groups=optional_groups)
-    result = build_result(nodes, locations, resolved_locations, solution, base_ts, plan["timezone"])
+    matrix = travel_matrix(provider, resolved_locations, prepared.base_ts, config, cache)
+    solution = solve_vrptw(matrix, prepared.windows, prepared.services,
+                           config["solver"]["time_limit_seconds"], prepared.groups,
+                           config.get("debug", False), optional_groups=prepared.optional_groups)
+    result = build_result(nodes, locations, resolved_locations, solution, prepared.base_ts, plan["timezone"])
     visited = {visit["visit_index"] for visit in result["visits"]}
-    reasons = dict(omitted)
+    reasons = dict(prepared.omitted)
     result["omitted_visits"] = [
         {"visit_index": index, "destination_id": stop["id"], "name": stop["name"],
-         "priority": stop.get("priority", 3),
+         "priority": stop.get("priority", DEFAULT_PRIORITY),
          "reason": reasons.get(index, "not_selected_by_solver")}
         for index, stop in enumerate(resolved["stops"])
         if not stop.get("required", True) and index not in visited
     ]
+    result["objective"] += sum(visit["priority"] * PRIORITY_PENALTY_SECONDS
+                               for visit in result["omitted_visits"]
+                               if visit["reason"] == "no_fitting_opening_window")
     return result
 
 
