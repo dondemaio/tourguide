@@ -26,7 +26,10 @@ def _parse(text, format):
     if len(text.encode("utf-8")) > MAX_INPUT:
         raise ValueError("Import exceeds size limit")
     if format == "yaml":
-        records = yaml.safe_load(text)
+        try:
+            records = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            raise ValueError("Invalid YAML import") from exc
         if not isinstance(records, list):
             raise ValueError("YAML import must contain a list")
         return records
@@ -126,7 +129,13 @@ def commit_import(candidates, selected_indices, repository):
 
 
 def export_destinations(repository, format, ids=None):
-    records = repository.list() if ids is None else [repository.get(key) for key in ids]
+    records = repository.list()
+    if ids is not None:
+        by_id = {record["id"]: record for record in records}
+        try:
+            records = [by_id[key] for key in ids]
+        except KeyError as exc:
+            raise ValueError(f"Unknown destination: {exc.args[0]}") from exc
     if format == "yaml":
         return yaml.safe_dump(records, allow_unicode=True, sort_keys=False)
     if format != "csv":
