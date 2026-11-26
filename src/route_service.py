@@ -24,6 +24,9 @@ def build_result(nodes, locations, resolved_locations, solution, base_ts, timezo
             "node_index": index,
             "role": role,
             "destination_id": node["id"] if role == "visit" else None,
+            "visit_index": node.get("visit_index"),
+            "required": node.get("required", True),
+            "priority": node.get("priority", 3) if not node.get("required", True) else None,
             "name": node.get("name", node.get("id", role)),
             "location": locations[index],
             "resolved_location": resolved_locations[index],
@@ -42,6 +45,7 @@ def build_result(nodes, locations, resolved_locations, solution, base_ts, timezo
         "timezone": timezone,
         "status": "feasible",
         "solver_status": solution.status,
+        "objective": solution.objective,
         "visits": visits,
         "totals": totals,
     }
@@ -49,7 +53,8 @@ def build_result(nodes, locations, resolved_locations, solution, base_ts, timezo
 
 def calculate_route(plan, repository, config):
     """Calculate a route without CLI or HTTP dependencies."""
-    nodes, windows, services, groups, base_ts = prepare_plan(resolve_plan(plan, repository))
+    resolved = resolve_plan(plan, repository)
+    nodes, windows, services, groups, base_ts, optional_groups, omitted = prepare_plan(resolved)
     locations = [node["location"] for node in nodes]
     geocoder = create_geocoder(config.get("geocoder", {}))
     settings = config.get("cache", {})
@@ -61,8 +66,18 @@ def calculate_route(plan, repository, config):
     matrix = travel_matrix(provider, resolved_locations, base_ts, config, cache)
     solution = solve_vrptw(matrix, windows, services,
                            config["solver"]["time_limit_seconds"], groups,
-                           config.get("debug", False))
-    return build_result(nodes, locations, resolved_locations, solution, base_ts, plan["timezone"])
+                           config.get("debug", False), optional_groups=optional_groups)
+    result = build_result(nodes, locations, resolved_locations, solution, base_ts, plan["timezone"])
+    visited = {visit["visit_index"] for visit in result["visits"]}
+    reasons = dict(omitted)
+    result["omitted_visits"] = [
+        {"visit_index": index, "destination_id": stop["id"], "name": stop["name"],
+         "priority": stop.get("priority", 3),
+         "reason": reasons.get(index, "not_selected_by_solver")}
+        for index, stop in enumerate(resolved["stops"])
+        if not stop.get("required", True) and index not in visited
+    ]
+    return result
 
 
 def render_route(result, config):

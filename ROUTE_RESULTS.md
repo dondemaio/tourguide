@@ -7,3 +7,10 @@ Travel is inbound to the visit. Arrival assumes immediate departure from the pre
 The existing cost interface provides durations only; distances are not fabricated. Resolved locations retain provider-specific representation pending canonical coordinates. Travel costs use the existing matrix departure-time assumption. Render separately with render_route(result, config); external renderers may recalculate routes. Named external map links remain deferred. Alternative opening windows are not skipped destinations.
 
 The transitional CLI prints the structured JSON and existing renderer output. No new CLI arguments are required.
+
+
+## Optional visits
+
+Plan entries may specify required: false and priority: 1 through 5 (default 3). Mandatory is the default; priority is only valid for optional visits. Priorities map to omission penalties of 30, 60, 90, 120 and 150 minutes of objective cost. The objective minimizes travel plus service duration and penalties for solver-omitted visits; waiting is not an objective cost. Priorities are soft trade-offs, not strict rankings. All opening-window alternatives of an optional visit share one penalty and at most one may be selected.
+
+Optional visits with no fitting opening window are omitted before provider requests. Invalid or missing destination data still fails validation, including for optional visits. Provider failures are not silently treated as omissions. Results include visit_index (zero-based input stop index, null for endpoints), required, priority, objective and omitted_visits. Omission reasons distinguish no_fitting_opening_window from not_selected_by_solver; the latter does not prove infeasibility. The objective excludes penalties for visits omitted during preprocessing and is not directly comparable across dates with different available visits. Date-range optimization must account for those omissions separately.

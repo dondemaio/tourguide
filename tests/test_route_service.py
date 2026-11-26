@@ -9,12 +9,15 @@ def test_calculate_and_render_route(monkeypatch, tmp_path):
     repository.add({"id": "museum", "name": "Museum", "location": "Example address",
                     "provider_ids": {"example": "123"},
                     "opening_hours": [{"days": ["Mon"], "times": ["09:05-10:00"]}]})
+    repository.add({"id": "closed", "name": "Closed museum", "location": "Other address",
+                    "opening_hours": [{"days": ["Tue"], "times": ["09:00-10:00"]}]})
     plan = {"timezone": "Europe/Zurich",
             "start": {"id": "start", "location": "Origin",
                       "time_window": ["2026-11-23T09:00", "2026-11-23T09:00"]},
             "end": {"id": "end", "location": "End",
                     "time_window": ["2026-11-23T09:10", "2026-11-23T09:10"]},
-            "stops": [{"destination_id": "museum", "service_minutes": 2}]}
+            "stops": [{"destination_id": "museum", "service_minutes": 2},
+                      {"destination_id": "closed", "required": False, "priority": 4}]}
     geocoder = Mock()
     geocoder.geocode.return_value = ["1,1", "2,2", "3,3"]
     provider = Mock()
@@ -23,6 +26,9 @@ def test_calculate_and_render_route(monkeypatch, tmp_path):
     monkeypatch.setattr("route_service.create_cost_provider", lambda config: provider)
     config = {"solver": {"time_limit_seconds": 1}}
     result = calculate_route(plan, repository, config)
+    assert result["omitted_visits"] == [{"visit_index": 1, "destination_id": "closed",
+                                         "name": "Closed museum", "priority": 4,
+                                         "reason": "no_fitting_opening_window"}]
     visit = result["visits"][1]
     assert visit["destination_id"] == "museum"
     assert visit["name"] == "Museum"

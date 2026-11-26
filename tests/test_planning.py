@@ -17,7 +17,7 @@ def plan(times, duration=30):
 
 
 def test_clipping_and_service_completion():
-    nodes, windows, services, groups, epoch = prepare_plan(plan(["08:00-10:00", "16:00-18:00"]))
+    nodes, windows, services, groups, epoch, optional, omitted = prepare_plan(plan(["08:00-10:00", "16:00-18:00"]))
     assert windows == [(0, 0), (0, 1800), (25200, 27000), (3600, 28800)]
     assert services == [0, 1800, 1800, 0]
     assert groups == [[1, 2]]
@@ -66,4 +66,29 @@ def test_nonexistent_local_time_rejected():
     data = plan(["09:00-10:00"])
     data["start"]["time_window"] = ["2026-03-29T02:30"] * 2
     with pytest.raises(ValueError, match="nonexistent"):
+        prepare_plan(data)
+
+
+def test_optional_closed_visit_is_omitted():
+    data = plan(["09:00-09:20"])
+    data["stops"][0]["required"] = False
+    nodes, windows, services, groups, epoch, optional, omitted = prepare_plan(data)
+    assert len(nodes) == 2
+    assert optional == []
+    assert omitted == [(0, "no_fitting_opening_window")]
+
+
+def test_optional_alternatives_share_penalty():
+    data = plan(["09:00-10:00", "11:00-12:00"])
+    data["stops"][0].update(required=False, priority=5)
+    result = prepare_plan(data)
+    assert result[3] == []
+    assert result[5] == [([1, 2], 9000)]
+
+
+@pytest.mark.parametrize("priority", [0, 6, True, 1.5])
+def test_invalid_priority(priority):
+    data = plan(["09:00-10:00"])
+    data["stops"][0].update(required=False, priority=priority)
+    with pytest.raises(ValueError, match="priority"):
         prepare_plan(data)

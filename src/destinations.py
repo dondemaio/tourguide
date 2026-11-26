@@ -80,7 +80,7 @@ def resolve_plan(plan, repository: DestinationRepository):
         destination = repository.get(visit["destination_id"])
         if not destination.get("location"):
             raise ValueError(f"Destination {destination['id']} has no location")
-        if set(visit) - {"destination_id", "service_minutes", "opening_hours"}:
+        if set(visit) - {"destination_id", "service_minutes", "opening_hours", "required", "priority"}:
             raise ValueError("Unknown visit fields")
         destination.update({key: value for key, value in visit.items() if key != "destination_id"})
         stops.append(destination)

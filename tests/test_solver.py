@@ -105,3 +105,33 @@ def test_schedule_accounts_for_wait_and_rounded_travel():
     assert visit.waiting_seconds == 59
     assert visit.departure_seconds == 180
     assert result.visits[-1].arrival_seconds == 210
+
+
+def test_optional_visit_penalty_controls_selection():
+    matrix = [[0, 100, 10], [100, 0, 100], [10, 100, 0]]
+    windows = [(0, 0), (0, 1000), (0, 1000)]
+    assert solve_vrptw(matrix, windows, [0, 0, 0], 1,
+                       optional_groups=[([1], 20)]).order == [0, 2]
+    assert solve_vrptw(matrix, windows, [0, 0, 0], 1,
+                       optional_groups=[([1], 500)]).order == [0, 1, 2]
+
+
+def test_optional_alternatives_select_at_most_one():
+    matrix = [[0 if i == j else 10 for j in range(4)] for i in range(4)]
+    result = solve_vrptw(matrix, [(0, 1000)] * 4, [0] * 4, 1,
+                         optional_groups=[([1, 2], 500)])
+    assert result.order in ([0, 1, 3], [0, 2, 3])
+
+
+def test_optional_unreachable_visit_can_be_omitted():
+    result = solve_vrptw([[0, None, 10], [None, 0, None], [10, None, 0]],
+                         [(0, 1000)] * 3, [0] * 3, 1,
+                         optional_groups=[([1], 500)])
+    assert result.order == [0, 2]
+    assert result.objective == 510
+
+
+def test_optional_group_overlap_rejected():
+    with pytest.raises(ValueError, match="Overlapping"):
+        solve_vrptw([[0] * 3 for _ in range(3)], [(0, 1000)] * 3,
+                    [0] * 3, 1, [[1]], optional_groups=[([1], 500)])

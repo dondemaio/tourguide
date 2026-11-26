@@ -32,6 +32,7 @@ class ScheduledNode:
 class SolverResult:
     visits: tuple[ScheduledNode, ...]
     status: int
+    objective: int
 
     @property
     def order(self):
@@ -103,19 +104,34 @@ def _validate_inputs(time_matrix, time_windows, service_times, time_limit_second
     return matrix, windows, services, groups
 
 
-def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, disjunctions=None, debug=False):
+def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, disjunctions=None, debug=False, optional_groups=None):
     """Return a scheduled route for a single-day route; None denotes an unreachable leg.
 
-    Each disjunction represents one mandatory visit with alternative nodes.
+    Mandatory disjunctions require one node; optional groups allow zero or one.
     Time windows constrain service start, not completion (opening-hours
     preprocessing is responsible for any closing-time adjustment).
     """
     matrix, windows, services, groups = _validate_inputs(
         time_matrix, time_windows, service_times, time_limit_seconds, disjunctions
     )
+    optional_groups = optional_groups or []
+    optional_members = set()
+    mandatory_members = {node for group in groups for node in group}
+    for members, penalty in optional_groups:
+        if type(penalty) is not int or not 1 <= penalty <= MAX_HORIZON:
+            raise ValueError("Optional penalty must be an integer from 1 to 86400")
+        if not members:
+            raise ValueError("Optional group must not be empty")
+        for node in members:
+            if type(node) is not int or not 0 < node < len(matrix) - 1:
+                raise ValueError("Invalid optional group node")
+            if node in optional_members or node in mandatory_members:
+                raise ValueError("Overlapping visit groups")
+            optional_members.add(node)
     count = len(matrix)
     manager = pywrapcp.RoutingIndexManager(count, 1, [0], [count - 1])
     routing = pywrapcp.RoutingModel(manager)
+    routing.SetVehicleUsedWhenEmpty(True, 0)
 
     def time_callback(from_idx, to_idx):
         origin = manager.IndexToNode(from_idx)
@@ -150,6 +166,9 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
         # Negative penalty requires exactly one active member (max_cardinality=1).
         routing.AddDisjunction([indices[node] for node in group], -1)
 
+    for members, penalty in optional_groups:
+        routing.AddDisjunction([indices[node] for node in members], penalty, 1)
+
     search = pywrapcp.DefaultRoutingSearchParameters()
     search.time_limit.seconds = time_limit_seconds
     search.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
@@ -175,7 +194,7 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
         if routing.IsEnd(idx):
             break
         idx = solution.Value(routing.NextVar(idx))
-    result = SolverResult(tuple(visits), routing.status())
+    result = SolverResult(tuple(visits), routing.status(), solution.ObjectiveValue())
     if debug:
         print("(Solver) found Route:", result.order)
     return result
