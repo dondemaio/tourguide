@@ -6,6 +6,7 @@ from backends.factory import create_geocoder, create_cost_provider, create_route
 from destinations import resolve_plan
 from planning import prepare_plan
 from solver import solve_vrptw
+from provider_cache import ProviderCache, geocode_locations, travel_matrix
 
 
 def build_result(nodes, locations, resolved_locations, solution, base_ts, timezone):
@@ -51,11 +52,13 @@ def calculate_route(plan, repository, config):
     nodes, windows, services, groups, base_ts = prepare_plan(resolve_plan(plan, repository))
     locations = [node["location"] for node in nodes]
     geocoder = create_geocoder(config.get("geocoder", {}))
-    resolved_locations = geocoder.geocode(locations) if geocoder else locations
+    settings = config.get("cache", {})
+    cache = ProviderCache(settings.get("path", "cache/providers.sqlite3")) if settings.get("enabled", False) else None
+    resolved_locations = geocode_locations(geocoder, locations, config, cache)
     if len(resolved_locations) != len(locations):
         raise ValueError("Geocoder returned an unexpected number of locations")
     provider = create_cost_provider(config)
-    matrix = provider.build_time_matrix(resolved_locations, base_ts)
+    matrix = travel_matrix(provider, resolved_locations, base_ts, config, cache)
     solution = solve_vrptw(matrix, windows, services,
                            config["solver"]["time_limit_seconds"], groups,
                            config.get("debug", False))
