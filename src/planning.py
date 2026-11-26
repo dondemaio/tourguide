@@ -1,6 +1,7 @@
 import math
 from copy import deepcopy
 from datetime import datetime
+from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
 from dateutil.parser import isoparse
@@ -27,6 +28,21 @@ def _duration(node):
     return math.ceil(minutes * 60)
 
 
+DEFAULT_PRIORITY = 3
+PRIORITY_PENALTY_SECONDS = 1800
+
+
+@dataclass
+class PreparedPlan:
+    nodes: list
+    windows: list
+    services: list
+    groups: list
+    base_ts: int
+    optional_groups: list
+    omitted: list
+
+
 def prepare_plan(data):
     """Return nodes, relative service-start windows, durations, mandatory groups, epoch, optional groups and omissions."""
     zone = ZoneInfo(data["timezone"])
@@ -46,7 +62,7 @@ def prepare_plan(data):
     omitted = []
     for visit_index, stop in enumerate(data["stops"]):
         required = stop.get("required", True)
-        priority = stop.get("priority", 3)
+        priority = stop.get("priority", DEFAULT_PRIORITY)
         if type(required) is not bool:
             raise ValueError("required must be boolean")
         if type(priority) is not int or not 1 <= priority <= 5:
@@ -74,10 +90,10 @@ def prepare_plan(data):
                 continue
             raise ValueError(f"Stop {stop['id']} has no opening window fitting the visit")
         if not required:
-            optional_groups.append((indices, priority * 1800))
+            optional_groups.append((indices, priority * PRIORITY_PENALTY_SECONDS))
         elif len(indices) > 1:
             groups.append(indices)
     nodes.append(deepcopy(end))
     windows.append((end_low - start_low, end_high - start_low))
     services.append(_duration(end))
-    return nodes, windows, services, groups, start_low, optional_groups, omitted
+    return PreparedPlan(nodes, windows, services, groups, start_low, optional_groups, omitted)
