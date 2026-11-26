@@ -8,6 +8,7 @@ Tourguide is a locally deployable Web application for discovering, maintaining, 
 - Keep application logic independent of HTTP, presentation, storage and external providers.
 - Prefer local operation without mandatory commercial APIs.
 - Deliver a usable Web product early and extend it incrementally.
+- Prefer clean schemas and interfaces over backwards compatibility; update existing examples directly without migration layers.
 - Preserve user control over imported and externally discovered data.
 
 ## Existing baseline and transition
@@ -58,9 +59,9 @@ YAML is the initial persistence option, not a permanent requirement. Evaluate tr
 ## Planning and optimization
 
 - For a fixed-date trip, start and end use absolute datetime windows. Date-range planning instead defines candidate dates and daily constraints, from which concrete windows are derived. Expand recurring opening hours into dated windows before solving, with explicit timezone semantics, multiple intervals, special recurring hours, date-specific exceptions and clipping to the planning horizon.
-- Distinguish arrival, service start and departure. Enforce completion before closing where required.
+- Distinguish arrival, service start and departure. Fixed visits must finish before closing. Future flexible visits specify preferred and minimum durations; penalize shortening in the objective rather than always choosing the minimum.
 - Normalize solver inputs into indexed nodes, integer travel costs, service durations and time windows. Enforce exactly one feasible window for each mandatory visit. A mandatory visit without a feasible window makes the requested plan infeasible; optional visits may be skipped according to their configured priorities. Alternative destinations are a separate future constraint.
-- Return structured results including visit order, schedule, waiting, service and travel times, distance where available, skipped visits and optimization status. Distinguish infeasibility, timeout without a solution, feasible results without proven optimality and provider failures.
+- Preserve destination IDs, names, addresses, coordinates and provider identifiers through geocoding, planning and rendering. Return structured results including visit order, schedule, waiting, service and travel times, distance where available, skipped visits and optimization status. Distinguish infeasibility, timeout without a solution, feasible results without proven optimality and provider failures.
 - Use a canonical coordinate representation; convert to provider-specific ordering at boundaries. Unreachable travel legs must not be interpreted as zero-cost connections. Cache geocoding and travel costs using provider/profile-aware keys and departure time where relevant.
 - Support single-day planning first, then best-day selection within a date range, independent day trips, and finally continuous multi-day trips with overnight stays. Keep these modes distinct.
 
@@ -86,7 +87,7 @@ Return field-level proposals with source URLs, retrieval dates and uncertainty. 
 
 ## Web UI and collaboration
 
-The first usable Web product must support destination management and import/export, route definition, calculation, itinerary and map display. Show the actual calculated geometry where available and distinguish externally recalculated routes. Expose useful validation errors and limitations rather than hiding incomplete functionality.
+The first usable Web product must support destination management and import/export, route definition, calculation, itinerary and map display. Use named map markers and investigate Google Maps place IDs or name/address matching to preserve destination names in external rendering. Show the actual calculated geometry where available and distinguish externally recalculated routes. Expose useful validation errors and limitations rather than hiding incomplete functionality.
 
 Plan for a shared destination repository, concurrent editing, personal and shared route plans, contributor identity, access control, change history and import provenance. Full collaboration features can evolve after the first UI. The initial deployment may be single-user in a trusted environment. Before enabling shared access, establish appropriate authentication, authorization, data integrity and deployment protections. Avoid concurrent writes that can silently lose changes.
 

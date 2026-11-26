@@ -17,13 +17,13 @@ Reliable solver behavior, reusable destinations, structured results and callable
 | #3 | Test infrastructure and baseline tests |
 | #4 | Solver correctness, mandatory visits, disjunctions, unreachable legs and error handling |
 | #5 | Opening-hours processing, validation, clipping and exceptions |
-| #6 | Reusable destination repository, route references, YAML/CSV import and export services; preserve compatibility with existing waypoint inputs during transition |
-| #7 | Structured route results, schedule and travel metrics |
+| #6 | Reusable destination repository, route references, YAML/CSV import and export services |
+| #7 | Structured route results, destination identities, schedule and travel metrics |
 | #8 | Geocoding and travel cost caching |
 | #9 | Optional destinations and visit priorities |
 | #10 | Date-range optimization (best single day) |
 | #11 | Complete initial application service layer and REST API for planning and destination management; extract shared logic throughout earlier PRs |
-| #12 | Initial Web UI: calculate a route from existing inputs, display itinerary and interactive map |
+| #12 | Initial Web UI: calculate a route from existing inputs, display itinerary and interactive map with named markers |
 | #13 | Destination management UI, file upload, pasted YAML/CSV, import review and export |
 | #14 | Interactive route definition, saved plans and calculation; complete existing workflows and retire transitional CLI when covered |
 | #15 | Destination discovery interface and first backend |
@@ -50,6 +50,8 @@ If any near-term feature is deferred to accelerate the Web UI, keep it explicitl
 
 Items below extend the near-term scope; their order is not yet agreed.
 
+- Flexible visit durations: preferred and minimum duration, shortening penalties and configurable trade-offs with travel and waiting time.
+- Rendering: preserve destination names in Google Maps links using provider place IDs where available or name/address matching; preserve named features in exports.
 - Planning: fixed appointments, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and route comparison.
 - Destination exchange: JSON and extraction from unstructured chats or emails.
 - Discovery: additional providers, polygon and administrative-region searches, optional local OSM indexing.
@@ -60,4 +62,4 @@ Items below extend the near-term scope; their order is not yet agreed.
 
 ## Development process
 
-Discuss scope, inspect current implementation, implement on a dedicated branch, test and open a PR targeting `develop`. Review before merging. Keep PRs focused, record limitations and decisions, and update this roadmap as milestones and priorities change. After the first Web product, prefer vertical feature delivery across application services, API and UI rather than long backend-only phases.
+Discuss scope, inspect current implementation, implement on a dedicated branch, test and open a PR targeting `develop`. Review before merging. No backwards compatibility or migration layers are required during personal-project development; update schemas and examples directly. Keep PRs focused, record limitations and decisions, and update this roadmap as milestones and priorities change. After the first Web product, prefer vertical feature delivery across application services, API and UI rather than long backend-only phases.

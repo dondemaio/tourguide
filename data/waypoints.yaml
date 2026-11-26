@@ -1,3 +1,5 @@
+timezone: Europe/Zurich
+
 start:
     id: start
     location: "Binzstrasse 24, 8045, Zürich"
@@ -36,7 +38,9 @@ stops:
                 times: [ "08:30-12:00", "13:30-17:30" ]
             -   days: [ "Thu" ]
                 times: [ "08:30-12:00", "13:30-19:00" ]
-            -   special: "First Saturday of each month: 08:00-12:00"
+            -   days: ["Sat"]
+                week_of_month: 1
+                times: ["08:00-12:00"]
         service_minutes: 20
 
     -   id: "Gunlex Waffen"
