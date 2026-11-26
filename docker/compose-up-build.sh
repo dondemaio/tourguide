@@ -5,4 +5,4 @@ declare -r SCRIPT_DIR
 
 cd "${SCRIPT_DIR}/../" || exit 123
 
-docker compose -f "${SCRIPT_DIR}/tourguide.yml" up --build -d
+docker compose -f "${SCRIPT_DIR}/tourguide.yml" -f "${SCRIPT_DIR}/tourguide-dev.yml" up --build -d

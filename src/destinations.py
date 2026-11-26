@@ -2,6 +2,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Protocol
 import os
+import re
 import tempfile
 
 import yaml
@@ -16,6 +17,8 @@ def validate_destination(record):
     for key in ("id", "name"):
         if not isinstance(record.get(key), str) or not record[key].strip():
             raise ValueError(f"Destination requires a nonempty {key}")
+    if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", record["id"]):
+        raise ValueError("Destination ID must be URL-safe (letters, digits, underscores, hyphens and non-leading dots)")
     for key in ("location", "website"):
         if key in record and (not isinstance(record[key], str) or not record[key].strip()):
             raise ValueError(f"Invalid destination {key}")
@@ -44,6 +47,8 @@ class DestinationRepository(Protocol):
     def list(self) -> list[dict]: ...
     def get(self, destination_id: str) -> dict: ...
     def add(self, record: dict) -> None: ...
+    def replace(self, destination_id: str, record: dict) -> None: ...
+    def delete(self, destination_id: str) -> None: ...
 
 
 class YamlDestinationRepository:
@@ -75,6 +80,28 @@ class YamlDestinationRepository:
         if any(existing["id"] == record["id"] for existing in records):
             raise ValueError(f"Destination already exists: {record['id']}")
         records.append(record)
+        self._write(records)
+
+    def replace(self, destination_id, record):
+        record = validate_destination(record)
+        if record["id"] != destination_id:
+            raise ValueError("Destination ID cannot change")
+        records = self.list()
+        for index, existing in enumerate(records):
+            if existing["id"] == destination_id:
+                records[index] = record
+                self._write(records)
+                return
+        raise ValueError(f"Unknown destination: {destination_id}")
+
+    def delete(self, destination_id):
+        records = self.list()
+        remaining = [record for record in records if record["id"] != destination_id]
+        if len(remaining) == len(records):
+            raise ValueError(f"Unknown destination: {destination_id}")
+        self._write(remaining)
+
+    def _write(self, records):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = None
         try:

@@ -29,4 +29,4 @@ ENV PYTHONPATH="/app/src"
 ENV ORTOOLS_NUM_THREADS=1
 
 # Default command
-CMD ["python", "src/main.py"]
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]

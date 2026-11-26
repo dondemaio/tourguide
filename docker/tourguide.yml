@@ -6,12 +6,11 @@ services:
         volumes:
             - ../data:/app/data
             - ../data/config.yaml:/app/config.yaml
-            - ../src:/app/src
             - ./git-ignored/cache:/app/cache
         depends_on:
             - osrm
-        command: "tail -f /dev/null"
-        tty: true
+        ports:
+            - "127.0.0.1:8000:8000"
     osrm:
         build:
             context: ../

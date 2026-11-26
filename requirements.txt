@@ -2,3 +2,5 @@ ortools==9.15.6755
 requests>=2.31
 pyyaml>=6.0
 python-dateutil>=2.9
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
