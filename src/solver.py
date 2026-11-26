@@ -54,7 +54,7 @@ def _validate_inputs(time_matrix, time_windows, service_times, time_limit_second
                 continue
             if isinstance(value, bool) or not isinstance(value, Real) or value < 0:
                 raise ValueError("Travel duration must be a non-negative finite number or None")
-            if not math.isfinite(value):
+            if not isinstance(value, int) and not math.isfinite(value):
                 raise ValueError("Travel duration must be finite")
             # A leg longer than the entire planning horizon cannot be used.
             normalized.append(None if value > MAX_HORIZON else math.ceil(value))
