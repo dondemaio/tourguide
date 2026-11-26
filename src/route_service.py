@@ -56,13 +56,15 @@ def calculate_route(plan, repository, config):
     resolved = resolve_plan(plan, repository)
     prepared = prepare_plan(resolved)
     nodes = prepared.nodes
+    if any(not isinstance(node.get("location"), str) or not node["location"].strip() for node in nodes):
+        raise ValueError("Every planned node requires a nonempty location")
     locations = [node["location"] for node in nodes]
     geocoder = create_geocoder(config.get("geocoder", {}))
     settings = config.get("cache", {})
     cache = ProviderCache(settings.get("path", "cache/providers.sqlite3")) if settings.get("enabled", False) else None
     resolved_locations = geocode_locations(geocoder, locations, config, cache)
     if len(resolved_locations) != len(locations) or any(not isinstance(v, str) or not v.strip() for v in resolved_locations):
-        raise ValueError("Geocoder returned an unexpected number of locations")
+        raise ValueError("Geocoder returned invalid locations")
     provider = create_cost_provider(config)
     matrix = travel_matrix(provider, resolved_locations, prepared.base_ts, config, cache)
     solution = solve_vrptw(matrix, prepared.windows, prepared.services,
