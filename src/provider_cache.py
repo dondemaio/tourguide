@@ -78,12 +78,15 @@ def travel_matrix(provider, locations, departure_ts, config, cache):
                settings.get("dataset_revision", "default"), unique)
     matrix = cache.get(key)
     if matrix is None:
-        matrix = provider.build_time_matrix(unique, departure_ts)
-        if len(matrix) != len(unique) or any(len(row) != len(unique) for row in matrix):
+        requested = unique * 2 if len(unique) == 1 else unique
+        matrix = provider.build_time_matrix(requested, departure_ts)
+        if len(matrix) != len(requested) or any(len(row) != len(requested) for row in matrix):
             raise ValueError("Provider returned invalid matrix dimensions")
         if any(v is not None and (type(v) not in (int, float) or not math.isfinite(v) or v < 0)
                for row in matrix for v in row):
             raise ValueError("Provider returned invalid travel durations")
+        if len(unique) == 1:
+            matrix = [[matrix[0][1]]]
         cache.put(key, matrix, ttl)
     indices = {location: index for index, location in enumerate(unique)}
     return [[matrix[indices[a]][indices[b]] for b in locations] for a in locations]
