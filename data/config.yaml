@@ -20,4 +20,4 @@ solver:
 
 # Optional global defaults and settings
 travel_mode: driving
-debug: true
+debug: false
