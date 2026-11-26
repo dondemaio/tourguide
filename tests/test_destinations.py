@@ -127,3 +127,17 @@ def test_resolve_uses_one_snapshot(repository, monkeypatch):
 def test_csv_formula_with_leading_spaces(repository):
     repository.add({"id": "a", "name": "  =Example"})
     assert "'  =Example" in export_destinations(repository, "csv")
+
+
+def test_malformed_yaml_import(repository):
+    with pytest.raises(ValueError, match="Invalid YAML"):
+        review_import("- [", "yaml", repository)
+
+
+def test_selected_export_preserves_order(repository):
+    repository.add({"id": "a", "name": "First"})
+    repository.add({"id": "b", "name": "Second"})
+    assert [record["id"] for record in yaml.safe_load(
+        export_destinations(repository, "yaml", ["b", "a"]))] == ["b", "a"]
+    with pytest.raises(ValueError, match="Unknown destination"):
+        export_destinations(repository, "yaml", ["missing"])
