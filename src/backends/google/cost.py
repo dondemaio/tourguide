@@ -30,6 +30,9 @@ class GoogleCostProvider(CostProvider):
         for row in data["rows"]:
             row_values = []
             for el in row["elements"]:
+                if el.get("status") == "ZERO_RESULTS":
+                    row_values.append(None)
+                    continue
                 if el.get("status") != "OK":
                     raise RuntimeError(f"Matrix element error: {el}")
                 # Prefer duration_in_traffic if present

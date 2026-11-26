@@ -4,6 +4,7 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 from backends.factory import create_geocoder, create_cost_provider, create_route_renderer
+from backends.google.cost import GoogleCostProvider
 from backends.google.web.render import GoogleMapsURLRenderer
 from backends.nominatim.geocode import NominatimGeocoder
 from backends.osrm.cost import OSRMCostProvider
@@ -81,3 +82,21 @@ def test_factory_selects_backends():
 def test_factory_rejects_unknown_backend(factory, config):
     with pytest.raises(ValueError, match="Unknown"):
         factory(config)
+
+
+def test_google_zero_results_is_unreachable(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"status": "OK", "rows": [
+        {"elements": [{"status": "OK", "duration": {"value": 0}}, {"status": "ZERO_RESULTS"}]},
+        {"elements": [{"status": "OK", "duration": {"value": 60}}, {"status": "OK", "duration": {"value": 0}}]},
+    ]}
+    monkeypatch.setattr("backends.google.cost.requests.get", Mock(return_value=response))
+    assert GoogleCostProvider("dummy").build_time_matrix(["A", "B"], 0) == [[0, None], [60, 0]]
+
+
+def test_google_other_element_errors_remain_errors(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"status": "OK", "rows": [{"elements": [{"status": "NOT_FOUND"}]}]}
+    monkeypatch.setattr("backends.google.cost.requests.get", Mock(return_value=response))
+    with pytest.raises(RuntimeError, match="Matrix element error"):
+        GoogleCostProvider("dummy").build_time_matrix(["A"], 0)
