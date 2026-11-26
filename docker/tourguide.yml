@@ -8,6 +8,7 @@ services:
             - ../data/destinations.yaml:/app/data/destinations.yaml
             - ../data/config.yaml:/app/config.yaml
             - ../src:/app/src
+            - ./git-ignored/cache:/app/cache
         depends_on:
             - osrm
         command: "tail -f /dev/null"
