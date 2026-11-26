@@ -18,6 +18,8 @@ def _timestamp(value, zone):
         dt = dt.replace(tzinfo=zone)
         if not datetime_exists(dt) or datetime_ambiguous(dt):
             raise ValueError(f"Ambiguous or nonexistent local time: {value}")
+    if "T" not in value and "t" not in value and " " not in value:
+        raise ValueError("Planning timestamps must include a time")
     if dt.microsecond:
         raise ValueError("Planning timestamps must use whole seconds")
     return int(dt.timestamp())
@@ -58,7 +60,7 @@ def prepare_plan(data):
         zone = ZoneInfo(data["timezone"])
     except (KeyError, TypeError, ZoneInfoNotFoundError) as exc:
         raise ValueError("Plan requires a valid IANA timezone") from exc
-    start, end = data["start"], data["end"]
+    start, end = data.get("start"), data.get("end")
     start_low, start_high = _endpoint_window(start, zone)
     end_low, end_high = _endpoint_window(end, zone)
     if not start_low <= start_high <= end_high or not start_low <= end_low <= end_high:
