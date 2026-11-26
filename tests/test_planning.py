@@ -17,16 +17,16 @@ def plan(times, duration=30):
 
 
 def test_clipping_and_service_completion():
-    nodes, windows, services, groups, epoch, optional, omitted = prepare_plan(plan(["08:00-10:00", "16:00-18:00"]))
-    assert windows == [(0, 0), (0, 1800), (25200, 27000), (3600, 28800)]
-    assert services == [0, 1800, 1800, 0]
-    assert groups == [[1, 2]]
-    assert nodes[1]["id"] == nodes[2]["id"] == "shop"
-    assert epoch == int(datetime(2026, 11, 23, 8, tzinfo=timezone.utc).timestamp())
+    prepared = prepare_plan(plan(["08:00-10:00", "16:00-18:00"]))
+    assert prepared.windows == [(0, 0), (0, 1800), (25200, 27000), (3600, 28800)]
+    assert prepared.services == [0, 1800, 1800, 0]
+    assert prepared.groups == [[1, 2]]
+    assert prepared.nodes[1]["id"] == prepared.nodes[2]["id"] == "shop"
+    assert prepared.base_ts == int(datetime(2026, 11, 23, 8, tzinfo=timezone.utc).timestamp())
 
 
 def test_exact_fit():
-    assert prepare_plan(plan(["09:00-09:30"]))[1][1] == (0, 0)
+    assert prepare_plan(plan(["09:00-09:30"])).windows[1] == (0, 0)
 
 
 def test_short_window_rejected():
@@ -35,7 +35,7 @@ def test_short_window_rejected():
 
 
 def test_short_alternative_removed():
-    assert prepare_plan(plan(["09:00-09:20", "10:00-11:00"]))[3] == []
+    assert prepare_plan(plan(["09:00-09:20", "10:00-11:00"])).groups == []
 
 
 def test_date_exception_overrides_recurring_hours():
@@ -72,18 +72,18 @@ def test_nonexistent_local_time_rejected():
 def test_optional_closed_visit_is_omitted():
     data = plan(["09:00-09:20"])
     data["stops"][0]["required"] = False
-    nodes, windows, services, groups, epoch, optional, omitted = prepare_plan(data)
-    assert len(nodes) == 2
-    assert optional == []
-    assert omitted == [(0, "no_fitting_opening_window")]
+    prepared = prepare_plan(data)
+    assert len(prepared.nodes) == 2
+    assert prepared.optional_groups == []
+    assert prepared.omitted == [(0, "no_fitting_opening_window")]
 
 
 def test_optional_alternatives_share_penalty():
     data = plan(["09:00-10:00", "11:00-12:00"])
     data["stops"][0].update(required=False, priority=5)
     result = prepare_plan(data)
-    assert result[3] == []
-    assert result[5] == [([1, 2], 9000)]
+    assert result.groups == []
+    assert result.optional_groups == [([1, 2], 9000)]
 
 
 @pytest.mark.parametrize("priority", [0, 6, True, 1.5])
