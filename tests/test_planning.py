@@ -107,3 +107,10 @@ def test_invalid_timezone():
     data["timezone"] = "Invalid/Zone"
     with pytest.raises(ValueError, match="timezone"):
         prepare_plan(data)
+
+
+def test_date_only_timestamp_rejected():
+    data = plan(["09:00-10:00"])
+    data["start"]["time_window"] = ["2026-11-23"] * 2
+    with pytest.raises(ValueError, match="include a time"):
+        prepare_plan(data)
