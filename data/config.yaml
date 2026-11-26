@@ -21,3 +21,10 @@ solver:
 # Optional global defaults and settings
 travel_mode: driving
 debug: false
+
+cache:
+    enabled: false
+    path: cache/providers.sqlite3
+    geocode_ttl_seconds: 2592000
+    travel_ttl_seconds: 604800
+    dataset_revision: "1"
