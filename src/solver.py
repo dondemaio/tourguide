@@ -104,6 +104,25 @@ def _validate_inputs(time_matrix, time_windows, service_times, time_limit_second
     return matrix, windows, services, groups
 
 
+def _validate_optional_groups(optional_groups, groups, count):
+    seen = {node for group in groups for node in group}
+    normalized = []
+    for members, penalty in optional_groups or []:
+        if type(penalty) is not int or not 1 <= penalty <= MAX_HORIZON:
+            raise ValueError("Optional penalty must be an integer from 1 to 86400")
+        if not members:
+            raise ValueError("Optional group must not be empty")
+        members = list(members)
+        for node in members:
+            if type(node) is not int or not 0 < node < count - 1:
+                raise ValueError("Invalid optional group node")
+            if node in seen:
+                raise ValueError("Overlapping visit groups")
+            seen.add(node)
+        normalized.append((members, penalty))
+    return normalized
+
+
 def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, disjunctions=None, debug=False, optional_groups=None):
     """Return a scheduled route for a single-day route; None denotes an unreachable leg.
 
@@ -114,21 +133,8 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
     matrix, windows, services, groups = _validate_inputs(
         time_matrix, time_windows, service_times, time_limit_seconds, disjunctions
     )
-    optional_groups = optional_groups or []
-    optional_members = set()
-    mandatory_members = {node for group in groups for node in group}
-    for members, penalty in optional_groups:
-        if type(penalty) is not int or not 1 <= penalty <= MAX_HORIZON:
-            raise ValueError("Optional penalty must be an integer from 1 to 86400")
-        if not members:
-            raise ValueError("Optional group must not be empty")
-        for node in members:
-            if type(node) is not int or not 0 < node < len(matrix) - 1:
-                raise ValueError("Invalid optional group node")
-            if node in optional_members or node in mandatory_members:
-                raise ValueError("Overlapping visit groups")
-            optional_members.add(node)
     count = len(matrix)
+    optional_groups = _validate_optional_groups(optional_groups, groups, count)
     manager = pywrapcp.RoutingIndexManager(count, 1, [0], [count - 1])
     routing = pywrapcp.RoutingModel(manager)
     routing.SetVehicleUsedWhenEmpty(True, 0)
@@ -194,7 +200,7 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
         if routing.IsEnd(idx):
             break
         idx = solution.Value(routing.NextVar(idx))
-    result = SolverResult(tuple(visits), routing.status(), solution.ObjectiveValue())
+    result = SolverResult(tuple(visits), routing.status(), solution.ObjectiveValue() + services[-1])
     if debug:
         print("(Solver) found Route:", result.order)
     return result
