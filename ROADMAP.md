@@ -50,7 +50,7 @@ If any near-term feature is deferred to accelerate the Web UI, keep it explicitl
 
 Items below extend the near-term scope; their order is not yet agreed.
 
-- Flexible visit durations: preferred and minimum duration, shortening penalties and configurable trade-offs with travel and waiting time.
+- Low priority: overnight opening hours and flexible visit durations: preferred and minimum duration, shortening penalties and configurable trade-offs with travel and waiting time.
 - Rendering: preserve destination names in Google Maps links using provider place IDs where available or name/address matching; preserve named features in exports.
 - Planning: fixed appointments, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and route comparison.
 - Destination exchange: JSON and extraction from unstructured chats or emails.
