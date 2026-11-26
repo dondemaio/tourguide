@@ -17,14 +17,14 @@ Reliable solver behavior, reusable destinations, structured results and callable
 | #3 | Test infrastructure and baseline tests |
 | #4 | Solver correctness, mandatory visits, disjunctions, unreachable legs and error handling |
 | #5 | Opening-hours processing, validation, clipping and exceptions |
-| #6 | Reusable destination repository, route references, YAML/CSV import and export services |
+| #6 | Reusable destination repository, route references, lossless YAML exchange and simple CSV candidate collection |
 | #7 | Structured route results, destination identities, schedule and travel metrics |
 | #8 | Geocoding and travel cost caching |
 | #9 | Optional destinations and visit priorities |
 | #10 | Date-range optimization (best single day) |
-| #11 | Complete initial application service layer and REST API for planning and destination management; extract shared logic throughout earlier PRs |
+| #11 | Complete initial application service layer and REST API for planning and destination management; extract shared logic throughout earlier PRs; mount the data directory for atomic writes (not individual destination files) |
 | #12 | Initial Web UI: calculate a route from existing inputs, display itinerary and interactive map with named markers |
-| #13 | Destination management UI, file upload, pasted YAML/CSV, import review and export |
+| #13 | Destination management UI, file upload, pasted YAML/CSV, candidate inbox and import review, overview and lossless export |
 | #14 | Interactive route definition, saved plans and calculation; complete existing workflows and retire transitional CLI when covered |
 | #15 | Destination discovery interface and first backend |
 | #16 | Geographic discovery UI, candidate review and shared import workflow |
@@ -50,10 +50,12 @@ If any near-term feature is deferred to accelerate the Web UI, keep it explicitl
 
 Items below extend the near-term scope; their order is not yet agreed.
 
-- Flexible visit durations: preferred and minimum duration, shortening penalties and configurable trade-offs with travel and waiting time.
+- Low priority: overnight opening hours and flexible visit durations: preferred and minimum duration, shortening penalties and configurable trade-offs with travel and waiting time.
 - Rendering: preserve destination names in Google Maps links using provider place IDs where available or name/address matching; preserve named features in exports.
 - Planning: fixed appointments, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and route comparison.
-- Destination exchange: JSON and extraction from unstructured chats or emails.
+- Destination collection: downloadable simple spreadsheet template, direct XLSX imports, shared Excel/Google Sheets workflows, map URL submissions, pasted unstructured chats/emails, and JSON programmatic exchange.
+- Candidate inbox: persist incomplete and unverified submissions separately, track source/contributor, normalize and enrich before approval, preserve raw information and review state; common workflow for discovery and manual submissions.
+- Collaboration: mobile-friendly contribution form, invitation-based shared collections, restricted contributor access and review ownership; security and transactional persistence before shared deployment.
 - Discovery: additional providers, polygon and administrative-region searches, optional local OSM indexing.
 - Enrichment: complex documents, optional LLM extraction, periodic verification and change reports.
 - Visualization: standalone HTML maps, GeoJSON, GPX and printable itineraries.
