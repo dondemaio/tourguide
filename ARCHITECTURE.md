@@ -45,6 +45,14 @@ Provide a separate discovery interface accepting a search term and geographic ar
 
 Potential providers include Google Places, Overpass and a separately indexed local OSM extract. OSRM is a routing service, not a discovery index. Respect provider terms, attribution, storage restrictions, rate limits and result caps. Report incomplete coverage and missing fields rather than claiming exhaustive results. Provider selection and indexing design remain open.
 
+## Destination import and export
+
+Use a shared, source-independent import service for manually collected destinations, uploaded files, pasted structured text and discovery candidates. Initially support YAML and CSV, with JSON and extraction from unstructured chats or emails as later extensions. Keep format parsing separate from normalization, validation, duplicate detection and persistence.
+
+Accept incomplete but identifiable destinations; missing attributes can be enriched later. Preview new records, identical duplicates, missing-field supplements, potential duplicates, conflicting values and invalid records. Allow selective approval and report record-level errors without blocking unrelated valid records. Do not silently overwrite existing values. Preserve provenance where available and assign stable IDs to new records.
+
+Export individual destinations, selected groups or the entire database. YAML exports must support lossless round trips, including nested opening hours, exceptions and provenance. Document CSV field mappings and any format limitations. Provide CLI/service support first, followed by Web UI file upload, pasted YAML/CSV, import review and export downloads. Automated discovery must reuse the same import workflow.
+
 ## Website enrichment and verification
 
 An optional website on a location is an input to enrichment (missing fields) and verification (existing fields). A dedicated backend may extract structured metadata such as JSON-LD, then relevant contact/opening-hours pages. More complex HTML, PDFs or LLM-assisted interpretation can follow. Return field-level proposed changes with source URLs, retrieval dates and uncertainty; never silently overwrite maintained records. Distinguish unreachable sources from confirmed closure. Limit requests, respect site policies, and protect server-side fetching against private-network access, unsafe redirects and unbounded responses. Treat retrieved content as untrusted data.
