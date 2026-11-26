@@ -8,7 +8,7 @@ docker compose -f docker/tourguide.yml up --build -d
 
 Open http://localhost:8000/docs for interactive OpenAPI documentation.
 
-For development:
+For development, run docker/compose-up-build.sh or the equivalent command:
 
 ```sh
 docker compose -f docker/tourguide.yml -f docker/tourguide-dev.yml up --build -d
@@ -36,7 +36,7 @@ docker compose -f docker/tourguide.yml exec tourguide python src/main.py
 | POST | /api/import/commit | Commit selected reviewed candidates |
 | POST | /api/export | Export YAML or CSV, optionally selected IDs |
 
-Route responses contain route and rendering; rendering is provider-specific. The existing plan schema is used. Import review accepts content and format; commit accepts candidates and selected_indices. Commit revalidates against current repository contents. Candidate payloads are not authorization tokens.
+Route responses contain route and rendering; rendering is provider-specific. The existing plan schema is used. The default plan endpoint reads the configured YAML file; it is transitional until saved-plan CRUD is introduced. There is no /api/plans collection endpoint yet. Destination IDs must match [A-Za-z0-9_-][A-Za-z0-9_.-]*; this applies equally to API writes and imports. Import review accepts content and format; commit accepts candidates and selected_indices. Commit revalidates against current repository contents. Candidate payloads are not authorization tokens.
 
 ## Deployment limitations
 
