@@ -1,4 +1,5 @@
 import math
+from dataclasses import dataclass
 from numbers import Real
 
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
@@ -10,6 +11,31 @@ MAX_WAIT = 6 * 3600
 
 class NoRouteFoundError(RuntimeError):
     """The solver did not find a feasible route within its search limits."""
+
+    def __init__(self, message, status):
+        super().__init__(message)
+        self.status = status
+
+
+@dataclass(frozen=True)
+class ScheduledNode:
+    node_index: int
+    arrival_seconds: int
+    service_start_seconds: int
+    departure_seconds: int
+    travel_seconds: int
+    waiting_seconds: int
+    service_seconds: int
+
+
+@dataclass(frozen=True)
+class SolverResult:
+    visits: tuple[ScheduledNode, ...]
+    status: int
+
+    @property
+    def order(self):
+        return [visit.node_index for visit in self.visits]
 
 
 def _seconds(value, label):
@@ -78,7 +104,7 @@ def _validate_inputs(time_matrix, time_windows, service_times, time_limit_second
 
 
 def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, disjunctions=None, debug=False):
-    """Return node order for a single-day route; None denotes an unreachable leg.
+    """Return a scheduled route for a single-day route; None denotes an unreachable leg.
 
     Each disjunction represents one mandatory visit with alternative nodes.
     Time windows constrain service start, not completion (opening-hours
@@ -111,6 +137,9 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
     for idx, (start, end) in zip(indices, windows):
         time_dim.CumulVar(idx).SetRange(start, end)
 
+    for idx in indices:
+        routing.AddVariableMinimizedByFinalizer(time_dim.CumulVar(idx))
+
     # Preserve self-loops: OR-Tools uses them for inactive alternative nodes.
     for origin in range(count - 1):
         for destination in range(1, count):
@@ -130,15 +159,23 @@ def solve_vrptw(time_matrix, time_windows, service_times, time_limit_seconds, di
     if not solution:
         raise NoRouteFoundError(
             f"No feasible route found within search limits (solver status: {routing.status()}); "
-            "check time windows, travel connectivity and search time limit"
+            "check time windows, travel connectivity and search time limit",
+            routing.status(),
         )
 
-    route = []
+    visits = []
     idx = routing.Start(0)
-    while not routing.IsEnd(idx):
-        route.append(manager.IndexToNode(idx))
+    while True:
+        node = manager.IndexToNode(idx)
+        start = solution.Value(time_dim.CumulVar(idx))
+        travel = matrix[visits[-1].node_index][node] if visits else 0
+        arrival = visits[-1].departure_seconds + travel if visits else start
+        visits.append(ScheduledNode(node, arrival, start, start + services[node],
+                                    travel, start - arrival, services[node]))
+        if routing.IsEnd(idx):
+            break
         idx = solution.Value(routing.NextVar(idx))
-    route.append(manager.IndexToNode(idx))
+    result = SolverResult(tuple(visits), routing.status())
     if debug:
-        print("(Solver) found Route:", route)
-    return route
+        print("(Solver) found Route:", result.order)
+    return result
