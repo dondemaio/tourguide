@@ -59,3 +59,21 @@ def test_route_contract(client, monkeypatch):
     calculate.assert_called_once_with(plan)
     plan["stops"][0]["required"] = "false"
     assert client.post("/api/routes", json=plan).status_code == 422
+
+
+@pytest.mark.parametrize("key", ["museum/123", ".", "..", "a b", "a?b", "a#b", "a%2Fb"])
+def test_unsupported_destination_ids_rejected(client, key):
+    record = {"id": key, "name": "Museum"}
+    assert client.post("/api/destinations", json=record).status_code == 422
+    response = client.post("/api/import/review", json={
+        "format": "yaml", "content": f"- id: '{key}'\n  name: Museum\n"})
+    assert response.json()[0]["status"] == "invalid"
+    assert client.get("/api/destinations").json() == []
+
+
+def test_url_safe_destination_id(client):
+    record = {"id": "museum-123_a.v2", "name": "Museum"}
+    assert client.post("/api/destinations", json=record).status_code == 201
+    assert client.get("/api/destinations/museum-123_a.v2").json() == record
+    assert client.put("/api/destinations/museum-123_a.v2", json=record).status_code == 200
+    assert client.delete("/api/destinations/museum-123_a.v2").status_code == 204
