@@ -1,72 +1,97 @@
 # Tourguide architecture
 
-## Purpose
+## Purpose and principles
 
-Tourguide is a locally deployable itinerary planner for reusable destinations, availability constraints and interchangeable routing services. The Web UI is the primary product interface for collaborative use; the REST API is the programmatic interface for automation and integrations. A dedicated application CLI is not a long-term product requirement.
+Tourguide is a locally deployable Web application for discovering, maintaining, sharing and visiting destinations. It calculates itineraries from geographic, temporal and visit constraints using interchangeable providers.
 
-## Current baseline
+- The Web UI is the primary product interface; the REST API supports automation and integrations.
+- Keep application logic independent of HTTP, presentation, storage and external providers.
+- Prefer local operation without mandatory commercial APIs.
+- Deliver a usable Web product early and extend it incrementally.
+- Preserve user control over imported and externally discovered data.
 
-The Python application uses YAML configuration and waypoint input, OR-Tools for route optimization, and interchangeable geocoding, cost and rendering backends. Opening hours are expanded into date-specific time windows before solving. The Docker setup supports local OSRM routing; the Switzerland OSM extract can be downloaded with `./download-osm.sh`. This baseline is not a claim that all constraints or integrations have been fully tested.
+## Existing baseline and transition
+
+The existing Python application reads YAML configuration and waypoint definitions, expands opening hours into dated time windows, uses OR-Tools for optimization and provides interchangeable geocoding, travel cost and rendering backends. Docker supports local OSRM routing; `./download-osm.sh` downloads the Switzerland OSM extract. Correctness and integration coverage still need review.
+
+Keep the existing CLI working during the foundational work as a temporary execution entry point. Do not develop new CLI-specific features. Retire it once its existing workflows are covered by the Web UI. Retain infrastructure and administration scripts.
 
 ## Target architecture
 
 ```mermaid
 flowchart TD
-    EXT[Scripts and external integrations] --> API[REST API]
     UI[Web UI] --> API[REST API]
-    API --> APP
-    APP --> LOC[Location repository]
+    EXT[Automation and integrations] --> API
+    API --> APP[Application services]
+    APP --> EX[Import and export]
     APP --> PRE[Planning preprocessing]
+    APP --> LOC[Location repository]
+    APP --> PLAN[Route plan repository]
+    APP --> BACK[Provider interfaces]
+    EX --> LOC
+    PRE --> LOC
     PRE --> SOL[Route solver]
-    APP --> BACK[Backend interfaces]
+    PRE --> BACK
+    LOC --> STORE[Persistence]
+    PLAN --> STORE
     BACK --> GEO[Geocoding]
     BACK --> COST[Travel costs]
-    BACK --> RENDER[Rendering]
+    BACK --> RENDER[Route geometry and rendering]
     BACK --> DISC[Destination discovery]
-    BACK --> ENRICH[Location enrichment]
-    LOC --> STORE[Persistence]
+    BACK --> ENRICH[Website enrichment]
 ```
 
-Keep domain logic independent of HTTP, CLI, persistence and external providers. Extract application services incrementally rather than rewriting the existing application. Proposed initial Web stack: FastAPI, plain HTML/CSS/JavaScript, Leaflet, and Docker Compose. Keep the existing CLI functional only as a transitional entry point until the Web UI covers its functionality. Do not invest in new CLI-specific features or maintain feature parity thereafter. Retire it once the Web UI is usable for the existing workflows. Retain independent application services and infrastructure/administration scripts such as the OSM downloader. Use a configurable map tile provider with appropriate attribution and usage compliance.
+Extract application services incrementally. The proposed initial stack is FastAPI, plain HTML/CSS/JavaScript, Leaflet and Docker Compose. Use configurable map tiles with appropriate attribution and usage compliance. Keep provider credentials on the server.
 
-## Data and planning
+## Data and persistence
 
-- Keep application configuration, reusable location data and individual route definitions separate.
-- A reusable location has a stable ID, name, address, optional coordinates, website, recurring opening hours, exceptions, tags and provenance.
-- A route references locations or defines inline destinations; visit duration, priority and overrides belong to the planning request.
-- Start and end retain absolute datetime time windows. Expand recurring opening hours for the relevant planning dates before solving, using explicit local timezone semantics and clipping to the planning horizon. Handle closed days, multiple intervals, exceptional dates and visits that must finish before closing.
-- Normalize solver inputs into indexed nodes, integer travel costs, service durations and time windows. Alternative windows for one mandatory visit must enforce exactly one visit. Keep optional visits explicitly distinct.
-- Return structured results with visit order, arrival/departure times, waiting, service, travel duration, distance where available, and skipped visits. Distinguish infeasibility from timeouts and provider errors.
-- Use a canonical coordinate representation and convert to provider-specific ordering at backend boundaries. Cache geocoding and travel costs with provider/profile-aware keys.
+Separate application configuration, reusable destination records and individual route plans. Use repository interfaces to isolate internal storage from application logic and exchange formats.
+
+A destination has a stable ID and identifying information such as a name, address or coordinates. Other attributes may include website, recurring opening hours, exceptions, tags, provider identifiers and field provenance. Incomplete but identifiable records are valid for storage; planning requires sufficient location and availability information or explicit visit overrides. Unknown opening hours must not silently mean always open.
+
+A route plan references stored destinations or inline locations and specifies visit durations, priorities, overrides, start/end locations and temporal constraints. Keep visit-specific settings separate from reusable destination attributes.
+
+YAML is the initial persistence option, not a permanent requirement. Evaluate transactional storage such as SQLite when shared editing requires it. YAML and CSV remain exchange formats independently of storage. Preserve stable identifiers and avoid lost updates when changing persistence.
+
+## Planning and optimization
+
+- Start and end use absolute datetime windows. Expand recurring opening hours into dated windows before solving, with explicit timezone semantics, multiple intervals, special recurring hours, date-specific exceptions and clipping to the planning horizon.
+- Distinguish arrival, service start and departure. Enforce completion before closing where required.
+- Normalize solver inputs into indexed nodes, integer travel costs, service durations and time windows. Enforce exactly one alternative window for each mandatory visit; optional visits and alternative destinations have explicit semantics.
+- Return structured results including visit order, schedule, waiting, service and travel times, distance where available, skipped visits and optimization status. Distinguish infeasibility, timeout without a solution, feasible results without proven optimality and provider failures.
+- Use a canonical coordinate representation; convert to provider-specific ordering at boundaries. Cache geocoding and travel costs using provider/profile-aware keys and departure time where relevant.
+- Support single-day planning first, then best-day selection within a date range, independent day trips, and finally continuous multi-day trips with overnight stays. Keep these modes distinct.
 
 ## Destination discovery
 
-Provide a separate discovery interface accepting a search term and geographic area. Initial area types are bounding box and radius; later support polygons and administrative regions. The Web UI can use the visible map bounds. Candidate results may include name, address, coordinates, opening hours, website, provider identifiers and provenance. Review and deduplicate candidates before importing them into the location repository.
+Expose a separate provider interface for search terms and geographic areas. Initially support bounding boxes, radii and the visible map viewport; later add polygons and administrative regions. Return candidates with available names, addresses, coordinates, opening hours, websites, provider identifiers and provenance.
 
-Potential providers include Google Places, Overpass and a separately indexed local OSM extract. OSRM is a routing service, not a discovery index. Respect provider terms, attribution, storage restrictions, rate limits and result caps. Report incomplete coverage and missing fields rather than claiming exhaustive results. Provider selection and indexing design remain open.
+Potential providers include Google Places, Overpass and a separately indexed local OSM extract. OSRM is a routing service, not a discovery index. Respect provider terms, storage restrictions, attribution, rate limits and result caps. Report coverage limitations and missing fields; do not promise exhaustive results. Review candidates through the common import service before persistence.
 
 ## Destination import and export
 
-Use a shared, source-independent import service for manually collected destinations, uploaded files, pasted structured text and discovery candidates. Initially support YAML and CSV, with JSON and extraction from unstructured chats or emails as later extensions. Keep format parsing separate from normalization, validation, duplicate detection and persistence.
+Use one source-independent import workflow for uploaded files, pasted structured text, manually collected records and discovery candidates. Initially support YAML and CSV; later consider JSON and extraction from unstructured chats or emails.
 
-Accept incomplete but identifiable destinations; missing attributes can be enriched later. Preview new records, identical duplicates, missing-field supplements, potential duplicates, conflicting values and invalid records. Allow selective approval and report record-level errors without blocking unrelated valid records. Do not silently overwrite existing values. Preserve provenance where available and assign stable IDs to new records.
+Separate parsing, normalization, validation, duplicate detection, review and persistence. Accept incomplete identifiable records. Distinguish new records, identical duplicates, missing-field supplements, potential duplicates, conflicting values and invalid records. Allow selective approval, record-level errors and partial success for unrelated valid records. Never silently overwrite existing values. Revalidate conflicts at commit time when shared editing is supported.
 
-Export individual destinations, selected groups or the entire database. YAML exports must support lossless round trips, including nested opening hours, exceptions and provenance. Document CSV field mappings and any format limitations. Provide application service support first, followed by Web UI file upload, pasted YAML/CSV, import review and export downloads. Automated discovery must reuse the same import workflow.
+Export individual destinations, selected groups or the entire repository. YAML must support lossless round trips of exportable data, including nested opening hours, exceptions and provenance. Document CSV mappings and limitations. Respect source-specific export restrictions and report excluded data. Provide service support first, then Web upload, pasted input, review and downloads. Use safe parsing, bounded uploads and spreadsheet-safe CSV handling.
 
 ## Website enrichment and verification
 
-An optional website on a location is an input to enrichment (missing fields) and verification (existing fields). A dedicated backend may extract structured metadata such as JSON-LD, then relevant contact/opening-hours pages. More complex HTML, PDFs or LLM-assisted interpretation can follow. Return field-level proposed changes with source URLs, retrieval dates and uncertainty; never silently overwrite maintained records. Distinguish unreachable sources from confirmed closure. Limit requests, respect site policies, and protect server-side fetching against private-network access, unsafe redirects and unbounded responses. Treat retrieved content as untrusted data.
+Use optional destination websites to enrich missing fields and verify existing values. Start with structured metadata (e.g. JSON-LD) and relevant contact/opening-hours pages; later consider complex HTML, PDFs and LLM-assisted extraction.
 
-## Collaborative use
+Return field-level proposals with source URLs, retrieval dates and uncertainty. Distinguish unavailable sources from confirmed closure. Require review before updating stored data. Treat retrieved content as untrusted, respect site policies and limit requests. Protect server-side fetching against private-network access, unsafe redirects and unbounded responses.
 
-Plan for a shared destination repository, concurrent editing without lost updates, personal and shared route plans, contributor identity and access control, change history and import provenance. These are future requirements, not prerequisites for the initial Web UI. Before exposing the application to untrusted users, establish appropriate authentication, authorization and deployment protections.
+## Web UI and collaboration
 
-YAML is an initial persistence option; evaluate SQLite or another transactional store as collaborative requirements mature. Keep persistence behind repository interfaces and YAML/CSV exchange formats independent of internal storage. No specific authentication or database solution is selected yet.
+The first usable Web product must support destination management and import/export, route definition, calculation, itinerary and map display. Show the actual calculated geometry where available and distinguish externally recalculated routes. Expose useful validation errors and limitations rather than hiding incomplete functionality.
 
-## Deployment and quality
+Plan for a shared destination repository, concurrent editing, personal and shared route plans, contributor identity, access control, change history and import provenance. Full collaboration features can evolve after the first UI. Initially restrict deployment to a trusted environment; before shared or untrusted access, establish appropriate authentication, authorization, data integrity and deployment protections. Avoid concurrent writes that can silently lose changes.
 
-Prefer local operation without mandatory commercial APIs. Keep credentials and private data out of Git. Maintain unit tests for domain logic and solver constraints, mocked provider tests and optional live integration tests. Keep UI usable while features are incomplete, with clear errors and limitations. Add features vertically across application, API and UI once the initial Web product exists.
+## Quality and operations
+
+Maintain unit tests for domain logic and solver constraints, mocked provider tests and optional live integration tests. Add API and UI workflow tests as those interfaces arrive. Keep credentials and private data out of Git. Preserve reproducible planning inputs and results where provider terms permit. Document deployment, backup and recovery as persistence evolves. Use structured diagnostics and explicit errors.
 
 ## Open decisions
 
-Exact location schema, timezone/exception rules, optimization objectives, persistence concurrency, discovery provider choice, and frontend details will be settled in their respective PRs. YAML is the initial storage proposal, not a permanent restriction.
+Exact schemas, timezone and exception rules, unknown-hours planning policy, optimization objectives, discovery providers, persistence/concurrency implementation, authentication and frontend details remain to be settled in their respective PRs. See [ROADMAP.md](ROADMAP.md) for sequencing and milestones.
