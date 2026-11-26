@@ -17,49 +17,13 @@ end:
         - "2026-06-15T23:00"
 
 stops:
-    #location: "8.5417,47.3713"
-    #location: "Bahnhofstrasse 10, Zurich"
-
-    #location: "8.5431,47.3739"
-    #location: "Limmatquai 20, Zurich"
-
-    -   id: "Marti Waffen AG"
-        location: "Oberdorfstrasse 4, 6340 Baar"
-        opening_hours:
-            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
-                times: [ "09:00-12:00", "13:00-17:00" ]
-        service_minutes: 15
-
-    -   id: "Grünig + Elmiger AG"
-        location: "Industriestrasse 22, 6102 Malters"
-        website: "https://www.gruenel.ch/"
-        opening_hours:
-            -   days: [ "Mon", "Tue", "Wed", "Fri" ]
-                times: [ "08:30-12:00", "13:30-17:30" ]
-            -   days: [ "Thu" ]
-                times: [ "08:30-12:00", "13:30-19:00" ]
-            -   days: ["Sat"]
-                week_of_month: 1
-                times: ["08:00-12:00"]
-        service_minutes: 20
-
-    -   id: "Gunlex Waffen"
-        location: "Emmetterstrasse 15, 6375 Beckenried"
-        opening_hours:
-            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
-                times: [ "13:00-17:00" ]
-        service_minutes: 20
-
-    -   id: "Ulrich Waffen"
-        location: "Selgis 6, 6436 Muotathal"
-        opening_hours:
-            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
-                times: [ "13:00-17:00" ]
-        service_minutes: 20
-
-    -   id: "Gun Shop Switzerland GmbH"
-        location: "Obere Schwandenstrasse 8, 8833 Samstagern"
-        opening_hours:
-            -   days: [ "Mon", "Tue", "Wed", "Thu", "Fri" ]
-                times: [ "13:00-17:00" ]
-        service_minutes: 30
+    - destination_id: destination-1
+      service_minutes: 15
+    - destination_id: destination-2
+      service_minutes: 20
+    - destination_id: destination-3
+      service_minutes: 20
+    - destination_id: destination-4
+      service_minutes: 20
+    - destination_id: destination-5
+      service_minutes: 30
