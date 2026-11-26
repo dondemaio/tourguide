@@ -28,7 +28,7 @@ def _duration(node):
 
 
 def prepare_plan(data):
-    """Return nodes, relative service-start windows, durations, groups and epoch."""
+    """Return nodes, relative service-start windows, durations, mandatory groups, epoch, optional groups and omissions."""
     zone = ZoneInfo(data["timezone"])
     start, end = data["start"], data["end"]
     start_low, start_high = [_timestamp(v, zone) for v in start["time_window"]]
@@ -42,7 +42,17 @@ def prepare_plan(data):
     windows = [(0, start_high - start_low)]
     services = [_duration(start)]
     groups = []
-    for stop in data["stops"]:
+    optional_groups = []
+    omitted = []
+    for visit_index, stop in enumerate(data["stops"]):
+        required = stop.get("required", True)
+        priority = stop.get("priority", 3)
+        if type(required) is not bool:
+            raise ValueError("required must be boolean")
+        if type(priority) is not int or not 1 <= priority <= 5:
+            raise ValueError("priority must be an integer from 1 to 5")
+        if required and "priority" in stop:
+            raise ValueError("priority applies only to optional visits")
         duration = _duration(stop)
         indices = []
         if "opening_hours" not in stop:
@@ -55,14 +65,19 @@ def prepare_plan(data):
             if earliest > latest:
                 continue
             indices.append(len(nodes))
-            nodes.append(deepcopy(stop))
+            nodes.append({**deepcopy(stop), "visit_index": visit_index})
             windows.append((earliest - start_low, latest - start_low))
             services.append(duration)
         if not indices:
+            if not required:
+                omitted.append((visit_index, "no_fitting_opening_window"))
+                continue
             raise ValueError(f"Stop {stop['id']} has no opening window fitting the visit")
-        if len(indices) > 1:
+        if not required:
+            optional_groups.append((indices, priority * 1800))
+        elif len(indices) > 1:
             groups.append(indices)
     nodes.append(deepcopy(end))
     windows.append((end_low - start_low, end_high - start_low))
     services.append(_duration(end))
-    return nodes, windows, services, groups, start_low
+    return nodes, windows, services, groups, start_low, optional_groups, omitted
