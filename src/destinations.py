@@ -2,6 +2,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Protocol
 import os
+import re
 import tempfile
 
 import yaml
@@ -16,6 +17,8 @@ def validate_destination(record):
     for key in ("id", "name"):
         if not isinstance(record.get(key), str) or not record[key].strip():
             raise ValueError(f"Destination requires a nonempty {key}")
+    if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*", record["id"]):
+        raise ValueError("Destination ID must be URL-safe (letters, digits, underscores, hyphens and non-leading dots)")
     for key in ("location", "website"):
         if key in record and (not isinstance(record[key], str) or not record[key].strip()):
             raise ValueError(f"Invalid destination {key}")
