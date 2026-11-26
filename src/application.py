@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 from threading import RLock
 
@@ -6,6 +7,7 @@ import yaml
 from destination_exchange import review_import, commit_import, export_destinations
 from destinations import YamlDestinationRepository
 from route_service import calculate_route, render_route
+from requests.exceptions import RequestException
 
 
 class Application:
@@ -29,7 +31,23 @@ class Application:
 
     def calculate(self, plan):
         result = calculate_route(plan, self.repository, self.config)
-        return {"route": result, "rendering": render_route(result, self.config)}
+        rendering = render_route(result, self.config)
+        geometry = None
+        warning = None
+        if self.config.get("cost_provider", {}).get("backend") == "osrm":
+            if self.config.get("route_renderer", {}).get("backend") == "geojson":
+                geometry = rendering
+            else:
+                config = deepcopy(self.config)
+                config["route_renderer"] = {"backend": "geojson"}
+                try:
+                    geometry = render_route(result, config)
+                except (RequestException, RuntimeError, ValueError):
+                    warning = "Road geometry unavailable; itinerary remains valid."
+        else:
+            warning = "Road geometry is not available for this cost provider."
+        return {"route": result, "rendering": rendering,
+                "geometry": geometry, "geometry_warning": warning}
 
     def list_destinations(self):
         return self.repository.list()

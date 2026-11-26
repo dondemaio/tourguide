@@ -1,10 +1,12 @@
 import logging
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 from requests.exceptions import RequestException
 
@@ -75,6 +77,12 @@ def create_app(application=None):
         yield
 
     app = FastAPI(title="Tourguide", lifespan=lifespan)
+    web = Path(__file__).parent / "web"
+    app.mount("/static", StaticFiles(directory=web), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def index():
+        return FileResponse(web / "index.html")
 
     def service(request: Request):
         return request.app.state.application
