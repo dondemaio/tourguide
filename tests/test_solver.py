@@ -135,3 +135,17 @@ def test_optional_group_overlap_rejected():
     with pytest.raises(ValueError, match="Overlapping"):
         solve_vrptw([[0] * 3 for _ in range(3)], [(0, 1000)] * 3,
                     [0] * 3, 1, [[1]], optional_groups=[([1], 500)])
+
+
+def test_end_service_included_in_objective():
+    result = solve_vrptw([[0, 10], [10, 0]], [(0, 0), (0, 100)],
+                         [5, 20], 1)
+    assert result.objective == 35
+    assert result.visits[-1].departure_seconds == 35
+
+
+def test_optional_group_iterator_is_not_consumed_by_validation():
+    result = solve_vrptw([[0, None, 10], [None, 0, None], [10, None, 0]],
+                         [(0, 1000)] * 3, [0] * 3, 1,
+                         optional_groups=iter([([1], 500)]))
+    assert result.order == [0, 2]
