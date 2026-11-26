@@ -1,10 +1,8 @@
 import argparse
-from copy import deepcopy
 
 import yaml
-from dateutil.parser import isoparse
 
-from opening_hours import opening_hours_to_time_windows
+from planning import prepare_plan
 
 # if sys.version_info >= (3, 12):
 #     raise RuntimeError(
@@ -18,18 +16,6 @@ def parse_args():
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--waypoints", default="data/waypoints.yaml")
     return parser.parse_args()
-
-
-def get_stop_time_windows(stop, route_date):
-    if "opening_hours" not in stop:
-        raise ValueError(f"Stop {stop['id']} needs opening_hours")
-
-    windows = opening_hours_to_time_windows(stop["opening_hours"], route_date)
-    if not windows:
-        raise ValueError(
-            f"Stop {stop['id']} has no opening hours for {route_date.isoformat()}"
-        )
-    return windows
 
 
 args = parse_args()
@@ -50,33 +36,7 @@ def debug_print(*args):
         print("(Main) ", *args)
 
 
-route_start = isoparse(data["start"]["time_window"][0])
-route_date = route_start.date()
-
-debug_print("Calculating nodes and disjunctions...")
-disjunctions = []
-nodes = [data["start"]]
-for stop in data["stops"]:
-    stop_time_windows = get_stop_time_windows(stop, route_date)
-    indices = []
-    for i, tw in enumerate(stop_time_windows):
-        node = deepcopy(stop)
-        node["id"] = f"{stop['id']}@tw{i}"
-        node["time_window"] = tw
-        node.pop("time_windows", None)
-        node.pop("opening_hours", None)
-        nodes.append(node)
-        # Only create disjunctions for multi-window stops
-        if len(stop_time_windows) > 1:
-            indices.append(len(nodes) - 1)
-    if indices:
-        disjunctions.append(indices)
-nodes = nodes + [data["end"]]
-debug_print("Nodes and disjunctions calculated.")
-debug_print("Nodes:")
-for i, n in enumerate(nodes):
-    debug_print("\t", i, n)
-debug_print("Disjunctions:", disjunctions)
+nodes, time_windows, service_times, disjunctions, base_ts = prepare_plan(data)
 
 # Extract locations (to feed into geocoder / cost provider)
 locations = [n["location"] for n in nodes]
@@ -98,20 +58,6 @@ else:
 debug_print("Locations:")
 for i, loc in enumerate(coord_locations):
     debug_print(f"\t{locations[i]} -> {loc}")
-
-# Base timestamp = route start
-base_ts = int(route_start.timestamp())
-
-# Build time windows and service times (OR-Tools expects relative seconds)
-debug_print("Building time windows and service times...")
-time_windows = []
-service_times = []
-for n in nodes:
-    start_ts = int(isoparse(n["time_window"][0]).timestamp())
-    end_ts = int(isoparse(n["time_window"][1]).timestamp())
-    time_windows.append((start_ts - base_ts, end_ts - base_ts))
-    service_times.append(n.get("service_minutes", 0) * 60)
-debug_print("Time windows and service times built.")
 
 # Build time matrix
 debug_print("Calculating time matrix...")
