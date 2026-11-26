@@ -48,7 +48,7 @@ function updateSelection() {
     $("select-visible").checked = visible.length > 0 && count === visible.length;
     $("select-visible").indeterminate = count > 0 && count < visible.length;
     $("selection").textContent = selected.size + " selected (including hidden search results)";
-    $("export-selected").disabled = !selected.size;
+    $("export-selected").disabled = busy || !selected.size;
 }
 async function refresh() {
     records = await request("/api/destinations");
@@ -94,7 +94,9 @@ function recordFromForm() {
         if (!date && !weekdays.length) throw new Error("Select weekdays or a date for every opening rule.");
         return {...(date ? {date} : {days:weekdays}), ...(week ? {week_of_month:Number(week)} : {}), times:row.querySelector(".times").value.split(",").map(t=>t.trim()).filter(Boolean)};
     });
-    if (hours.length) record.opening_hours = hours;
+    const original = records.find(r => r.id === editing);
+    if (hours.length || original?.opening_hours?.length === 0) record.opening_hours = hours;
+    if (!tags.length && original?.tags?.length === 0) record.tags = [];
     return record;
 }
 function remove(record) {
@@ -112,8 +114,8 @@ function drawCandidates() {
         if(candidate.record){const d=el("details");d.append(el("summary","Record details"),el("pre",JSON.stringify(candidate.record,null,2)));detail.append(d);}
         row.append(pick,el("td",candidate.record?.name || "Row "+(candidate.index+1)),el("td",candidate.status.replaceAll("_"," ")),detail);$("candidates").append(row);
     }
-    $("select-new").disabled = !candidates.some(c=>c.status==="new");
-    $("commit").disabled = !chosen.size;
+    $("select-new").disabled = busy || !candidates.some(c=>c.status==="new");
+    $("commit").disabled = busy || !chosen.size;
 }
 function invalidateReview(){candidates=[];chosen.clear();$("import-summary").textContent="Review required.";drawCandidates();}
 $("search").addEventListener("input",drawRecords);
