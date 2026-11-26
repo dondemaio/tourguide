@@ -25,7 +25,8 @@ def main():
     print("Route result:")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     print("Route data returned from backend:")
-    print(render_route(result, config))
+    rendered = render_route(result, config)
+    print(rendered if isinstance(rendered, str) else json.dumps(rendered, ensure_ascii=False))
 
 
 if __name__ == "__main__":
