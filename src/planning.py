@@ -2,7 +2,7 @@ import math
 from copy import deepcopy
 from datetime import datetime
 from dataclasses import dataclass
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dateutil.parser import isoparse
 from dateutil.tz import datetime_exists, datetime_ambiguous
@@ -11,6 +11,8 @@ from opening_hours import opening_hours_to_time_windows
 
 
 def _timestamp(value, zone):
+    if not isinstance(value, str):
+        raise ValueError("Planning timestamps must be ISO strings")
     dt = isoparse(value)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=zone)
@@ -43,12 +45,22 @@ class PreparedPlan:
     omitted: list
 
 
+def _endpoint_window(node, zone):
+    window = node.get("time_window") if isinstance(node, dict) else None
+    if not isinstance(window, (list, tuple)) or len(window) != 2:
+        raise ValueError("Endpoint requires a two-bound time_window")
+    return [_timestamp(value, zone) for value in window]
+
+
 def prepare_plan(data):
     """Return nodes, relative service-start windows, durations, mandatory groups, epoch, optional groups and omissions."""
-    zone = ZoneInfo(data["timezone"])
+    try:
+        zone = ZoneInfo(data["timezone"])
+    except (KeyError, TypeError, ZoneInfoNotFoundError) as exc:
+        raise ValueError("Plan requires a valid IANA timezone") from exc
     start, end = data["start"], data["end"]
-    start_low, start_high = [_timestamp(v, zone) for v in start["time_window"]]
-    end_low, end_high = [_timestamp(v, zone) for v in end["time_window"]]
+    start_low, start_high = _endpoint_window(start, zone)
+    end_low, end_high = _endpoint_window(end, zone)
     if not start_low <= start_high <= end_high or not start_low <= end_low <= end_high:
         raise ValueError("Invalid start/end planning windows")
     route_date = datetime.fromtimestamp(start_low, zone).date()
