@@ -29,6 +29,7 @@ def test_calculate_and_render_route(monkeypatch, tmp_path):
     assert result["omitted_visits"] == [{"visit_index": 1, "destination_id": "closed",
                                          "name": "Closed museum", "priority": 4,
                                          "reason": "no_fitting_opening_window"}]
+    assert result["objective"] == 7440
     visit = result["visits"][1]
     assert visit["destination_id"] == "museum"
     assert visit["name"] == "Museum"

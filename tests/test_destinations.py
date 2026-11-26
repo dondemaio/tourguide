@@ -99,3 +99,45 @@ def test_csv_overview(repository):
 def test_csv_malformed_document(repository):
     with pytest.raises(ValueError, match="Invalid CSV"):
         review_import('Name,Notes\nMuseum,"unfinished', "csv", repository)
+
+
+@pytest.mark.parametrize("metadata", [
+    {"provider_ids": {"example": 123}},
+    {"tags": "tag"},
+    {"provenance": {"candidate": None}},
+    {"provenance": {"candidate": {"notes": 123}}},
+])
+def test_invalid_metadata_rejected(repository, metadata):
+    with pytest.raises(ValueError):
+        repository.add({"id": "a", "name": "Example", **metadata})
+
+
+def test_resolve_uses_one_snapshot(repository, monkeypatch):
+    repository.add({"id": "a", "name": "Example", "location": "Address"})
+    from unittest.mock import Mock
+    original = repository.list
+    snapshot = Mock(wraps=original)
+    monkeypatch.setattr(repository, "list", snapshot)
+    resolved = resolve_plan({"stops": [{"destination_id": "a", "service_minutes": 10},
+                                       {"destination_id": "a", "service_minutes": 20}]}, repository)
+    assert [stop["service_minutes"] for stop in resolved["stops"]] == [10, 20]
+    snapshot.assert_called_once_with()
+
+
+def test_csv_formula_with_leading_spaces(repository):
+    repository.add({"id": "a", "name": "  =Example"})
+    assert "'  =Example" in export_destinations(repository, "csv")
+
+
+def test_malformed_yaml_import(repository):
+    with pytest.raises(ValueError, match="Invalid YAML"):
+        review_import("- [", "yaml", repository)
+
+
+def test_selected_export_preserves_order(repository):
+    repository.add({"id": "a", "name": "First"})
+    repository.add({"id": "b", "name": "Second"})
+    assert [record["id"] for record in yaml.safe_load(
+        export_destinations(repository, "yaml", ["b", "a"]))] == ["b", "a"]
+    with pytest.raises(ValueError, match="Unknown destination"):
+        export_destinations(repository, "yaml", ["missing"])

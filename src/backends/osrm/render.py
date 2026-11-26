@@ -1,5 +1,3 @@
-import json
-
 import requests
 
 from backends.base.render import RouteRenderer
@@ -19,7 +17,9 @@ _geojson_params = {
 class OSRMRouteRenderer(RouteRenderer):
     def __init__(self, base_url, style="osrm"):
         self.base_url = base_url.rstrip("/")
-        self.style = style
+        if style not in (None, "osrm", "geojson"):
+            raise ValueError(f"Unknown OSRM rendering style: {style}")
+        self.style = style or "osrm"
 
     def build_route(self, locations, coord_locations, order):
         ordered = [coord_locations[i] for i in order]
@@ -27,18 +27,16 @@ class OSRMRouteRenderer(RouteRenderer):
 
         url = f"{self.base_url}/route/v1/driving/{coords}"
 
-        if self.style is None or self.style == "osrm":
-            params = _osrm_params
-        elif self.style == "geojson":
-            params = _geojson_params
-        else:
-            params = _osrm_params
+        params = _geojson_params if self.style == "geojson" else _osrm_params
 
         r = requests.get(url, params=params, timeout=30)
         r.raise_for_status()
         route_data = r.json()
 
-        if self.style is None or self.style == "osrm":
+        if route_data.get("code") != "Ok" or not route_data.get("routes"):
+            raise RuntimeError(f"OSRM route error: {route_data.get('code')}")
+
+        if self.style == "osrm":
             return route_data
         elif self.style == "geojson":
             geojson = {
@@ -46,6 +44,4 @@ class OSRMRouteRenderer(RouteRenderer):
                 "geometry": route_data["routes"][0]["geometry"],
                 "properties": {}
             }
-            return json.dumps(geojson)
-        else:
-            return route_data
+            return geojson

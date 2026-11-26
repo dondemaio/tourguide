@@ -59,7 +59,7 @@ def geocode_locations(geocoder, locations, config, cache):
             resolved[location] = value
     if missing:
         values = geocoder.geocode(missing)
-        if len(values) != len(missing) or any(not isinstance(v, str) or not v for v in values):
+        if len(values) != len(missing) or any(not isinstance(v, str) or not v.strip() for v in values):
             raise ValueError("Geocoder returned invalid locations")
         for location, value in zip(missing, values):
             cache.put(_key(namespace, location), value, ttl)
@@ -80,13 +80,19 @@ def travel_matrix(provider, locations, departure_ts, config, cache):
     if matrix is None:
         requested = unique * 2 if len(unique) == 1 else unique
         matrix = provider.build_time_matrix(requested, departure_ts)
-        if len(matrix) != len(requested) or any(len(row) != len(requested) for row in matrix):
-            raise ValueError("Provider returned invalid matrix dimensions")
-        if any(v is not None and (type(v) not in (int, float) or not math.isfinite(v) or v < 0)
-               for row in matrix for v in row):
-            raise ValueError("Provider returned invalid travel durations")
+        _validate_matrix(matrix, len(requested))
         if len(unique) == 1:
             matrix = [[matrix[0][1]]]
         cache.put(key, matrix, ttl)
+    _validate_matrix(matrix, len(unique))
     indices = {location: index for index, location in enumerate(unique)}
     return [[matrix[indices[a]][indices[b]] for b in locations] for a in locations]
+
+
+def _validate_matrix(matrix, count):
+    if not isinstance(matrix, list) or len(matrix) != count or any(
+            not isinstance(row, list) or len(row) != count for row in matrix):
+        raise ValueError("Provider returned invalid matrix dimensions")
+    if any(v is not None and (type(v) not in (int, float) or not math.isfinite(v) or v < 0)
+           for row in matrix for v in row):
+        raise ValueError("Provider returned invalid travel durations")

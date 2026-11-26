@@ -36,7 +36,7 @@ class GoogleCostProvider(CostProvider):
                 if el.get("status") != "OK":
                     raise RuntimeError(f"Matrix element error: {el}")
                 # Prefer duration_in_traffic if present
-                dur = el.get("duration_in_traffic", el["duration"])["value"]
+                dur = (el.get("duration_in_traffic") or el["duration"])["value"]
                 row_values.append(dur)
             matrix.append(row_values)
 

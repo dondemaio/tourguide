@@ -21,8 +21,9 @@ Reliable solver behavior, reusable destinations, structured results and callable
 | #7 | Structured route results, destination identities, schedule and travel metrics |
 | #8 | Geocoding and travel cost caching |
 | #9 | Optional destinations and visit priorities |
-| #10 | Date-range optimization (best single day) |
-| #11 | Complete initial application service layer and REST API for planning and destination management; extract shared logic throughout earlier PRs; mount the data directory for atomic writes (not individual destination files) |
+| QA (before #11) | Consolidation, consistency, validation and regression coverage |
+| Deferred #10 | Date-range optimization (best single day), including UI; retained for later delivery after the usable Web application |
+| #11 | Complete initial application service layer and REST API for planning and destination management; extract shared logic throughout earlier PRs; use the directory mount established during QA |
 | #12 | Initial Web UI: calculate a route from existing inputs, display itinerary and interactive map with named markers |
 | #13 | Destination management UI, file upload, pasted YAML/CSV, candidate inbox and import review, overview and lossless export |
 | #14 | Interactive route definition, saved plans and calculation; complete existing workflows and retire transitional CLI when covered |
@@ -40,11 +41,13 @@ Reliable solver behavior, reusable destinations, structured results and callable
 | v0.2 — Usable Web application | Manage, import and export destinations; define trips; calculate and inspect routes on a map and in an itinerary. Docker deployment and REST API available. Retire the CLI once its workflows are covered. |
 | v0.3 — Destination discovery | Search by term and geographic area, review available candidate metadata and coverage limitations, deduplicate and import selected records. |
 | v0.4 — Enrichment and verification | Retrieve missing information and detect changes from destination websites; review source-backed proposals before applying them. |
-| v0.5 — Advanced planning | Complete any deferred date-range optimization; distribute visits across independent day trips, then support continuous multi-day trips with overnight stays. |
+| v0.5 — Advanced planning | Implement deferred date-range optimization (best single day within a user-specified range), including comparison of all omission penalties; distribute visits across independent day trips, then support continuous multi-day trips with overnight stays. |
 
 The first Web deployment may be single-user in a trusted environment. Shared access requires appropriate security and safe persistence before it is enabled; this is a deployment gate, not a reason to postpone the initial UI. Full collaborative features have no fixed milestone yet.
 
 If any near-term feature is deferred to accelerate the Web UI, keep it explicitly on the roadmap and reschedule it rather than silently dropping it. Shared deployment safeguards must be implemented before collaborative access, regardless of PR numbering.
+
+Date-range optimization is explicitly retained, but postponed because group tours usually have limited date flexibility. Resume after the usable Web application, with exact order relative to discovery to be agreed. Keep #11–18 in their existing order; PR numbers are scope labels and may differ from actual GitHub numbers.
 
 ## Additional backlog
 

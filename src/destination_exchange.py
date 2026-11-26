@@ -26,7 +26,10 @@ def _parse(text, format):
     if len(text.encode("utf-8")) > MAX_INPUT:
         raise ValueError("Import exceeds size limit")
     if format == "yaml":
-        records = yaml.safe_load(text)
+        try:
+            records = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            raise ValueError("Invalid YAML import") from exc
         if not isinstance(records, list):
             raise ValueError("YAML import must contain a list")
         return records
@@ -72,10 +75,14 @@ def parse_csv_candidates(text):
 
 
 def review_import(text, format, repository):
+    return _review_records(_parse(text, format), repository)
+
+
+def _review_records(records, repository):
     existing = {record["id"]: record for record in repository.list()}
     seen = set()
     candidates = []
-    for index, raw in enumerate(_parse(text, format)):
+    for index, raw in enumerate(records):
         try:
             if isinstance(raw, Exception):
                 raise raw
@@ -111,7 +118,7 @@ def commit_import(candidates, selected_indices, repository):
             results.append(ImportCandidate(candidate.index, "rejected", candidate.record, "Not a new record"))
             continue
         try:
-            current = review_import(yaml.safe_dump([candidate.record]), "yaml", repository)[0]
+            current = _review_records([candidate.record], repository)[0]
             if current.status != "new":
                 raise ValueError(f"Import candidate is now {current.status}")
             repository.add(candidate.record)
@@ -122,7 +129,13 @@ def commit_import(candidates, selected_indices, repository):
 
 
 def export_destinations(repository, format, ids=None):
-    records = repository.list() if ids is None else [repository.get(key) for key in ids]
+    records = repository.list()
+    if ids is not None:
+        by_id = {record["id"]: record for record in records}
+        try:
+            records = [by_id[key] for key in ids]
+        except KeyError as exc:
+            raise ValueError(f"Unknown destination: {exc.args[0]}") from exc
     if format == "yaml":
         return yaml.safe_dump(records, allow_unicode=True, sort_keys=False)
     if format != "csv":
@@ -144,6 +157,6 @@ def export_destinations(repository, format, ids=None):
         row = {"name": record["name"], "address": record.get("location", ""),
                "website": record.get("website", ""), "opening hours": hours,
                "notes": candidate.get("notes", "")}
-        writer.writerow({key: "'" + value if value.startswith(("=", "+", "-", "@", "\t", "\r", "\n")) else value
+        writer.writerow({key: "'" + value if (value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(("=", "+", "-", "@"))) else value
                          for key, value in row.items()})
     return stream.getvalue()
