@@ -90,6 +90,7 @@ def _validate_inputs(time_matrix, time_windows, service_times, time_limit_second
     groups = []
     seen = set()
     for group in disjunctions or []:
+        group = list(group)
         if not group:
             raise ValueError("Disjunction groups must not be empty")
         members = []
@@ -110,9 +111,9 @@ def _validate_optional_groups(optional_groups, groups, count):
     for members, penalty in optional_groups or []:
         if type(penalty) is not int or not 1 <= penalty <= MAX_HORIZON:
             raise ValueError("Optional penalty must be an integer from 1 to 86400")
+        members = list(members)
         if not members:
             raise ValueError("Optional group must not be empty")
-        members = list(members)
         for node in members:
             if type(node) is not int or not 0 < node < count - 1:
                 raise ValueError("Invalid optional group node")
