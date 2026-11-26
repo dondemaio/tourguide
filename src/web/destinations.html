@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Destinations — Tourguide</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/destinations.css"><script defer src="/static/destinations.js"></script></head>
+<body><header><h1>Tourguide</h1><nav><a href="/">Route planner</a> · <a href="/destinations" aria-current="page">Destinations</a> · <a href="/docs">API documentation</a></nav></header>
+<main><h2>Destination repository</h2><p id="notice" role="status" aria-live="polite"></p>
+<div class="workspace"><section class="panel"><div class="toolbar"><h2>Destinations</h2><button id="new">New destination</button></div>
+<label>Search <input id="search" type="search" placeholder="Name, address, ID or tag"></label><p id="count"></p>
+<div class="table-scroll"><table><thead><tr><th scope="col"><input id="select-visible" type="checkbox" aria-label="Select visible destinations"></th><th scope="col">Name / ID</th><th scope="col">Location</th><th scope="col">Actions</th></tr></thead><tbody id="records"></tbody></table></div>
+<div class="actions"><button id="export-all">Export all</button><button id="export-selected">Export selected</button><label>Format <select id="export-format"><option>yaml</option><option>csv</option></select></label></div><p id="selection"></p><small>YAML preserves all fields. CSV is a simplified exchange format.</small></section>
+<section class="panel"><h2 id="editor-title">New destination</h2><form id="editor">
+<label>ID <input id="record-id" required pattern="[A-Za-z0-9_\-][A-Za-z0-9_.\-]*"></label>
+<label>Name <input id="name" required></label><label>Address or longitude,latitude <input id="location"></label>
+<label>Website <input id="website"></label><label>Tags (one per line)<textarea id="tags" rows="3"></textarea></label>
+<fieldset><legend>Opening hours</legend><p>Empty means unspecified. Each rule has weekdays or a date, and time intervals. Empty intervals mean closed.</p><div id="hours"></div><button type="button" id="add-hours">Add rule</button></fieldset>
+<details><summary>Advanced metadata</summary><label>Provider IDs (JSON object)<textarea id="provider-ids" rows="3"></textarea></label><label>Provenance (JSON object)<textarea id="provenance" rows="4"></textarea></label></details>
+<div class="actions"><button type="submit">Save destination</button><button type="button" id="cancel">Cancel / reset</button></div></form></section></div>
+<section class="panel exchange"><h2>Import destinations</h2><p>Review candidates before adding. Existing records are never overwritten by import.</p>
+<label>Format <select id="import-format"><option>yaml</option><option>csv</option></select></label><label>File <input type="file" id="import-file" accept=".yaml,.yml,.csv,text/plain"></label>
+<label>Or paste content<textarea id="import-content" rows="7"></textarea></label><button id="review">Review import</button>
+<p id="import-summary" role="status"></p><div class="table-scroll"><table><thead><tr><th>Select</th><th>Candidate</th><th>Status</th><th>Details</th></tr></thead><tbody id="candidates"></tbody></table></div><div class="actions"><button id="select-new" disabled>Select all new</button><button id="commit" disabled>Add selected candidates</button></div></section>
+</main></body></html>
