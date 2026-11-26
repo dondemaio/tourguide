@@ -84,6 +84,10 @@ def create_app(application=None):
     def index():
         return FileResponse(web / "index.html")
 
+    @app.get("/destinations", include_in_schema=False)
+    def destination_page():
+        return FileResponse(web / "destinations.html")
+
     def service(request: Request):
         return request.app.state.application
 
