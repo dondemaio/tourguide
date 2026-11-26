@@ -54,7 +54,7 @@ A destination has a stable ID and identifying information such as a name, addres
 
 A route plan references stored destinations or inline locations and specifies visit durations, priorities, overrides, start/end locations and temporal constraints. Keep visit-specific settings separate from reusable destination attributes.
 
-YAML is the initial persistence option, not a permanent requirement. Evaluate transactional storage such as SQLite when shared editing requires it. YAML and CSV remain exchange formats independently of storage. Preserve stable identifiers and avoid lost updates when changing persistence.
+YAML is the initial persistence option, not a permanent requirement. Support SQLite and PostgreSQL or comparable database implementations behind the same repository interfaces when needed. Keep storage-specific queries and transactions inside adapters. YAML and CSV remain exchange formats independently of storage. Preserve stable identifiers and avoid lost updates when changing persistence.
 
 ## Planning and optimization
 
