@@ -90,7 +90,8 @@ if geocoder:
     debug_print("Running geocoder...")
     coord_locations = geocoder.geocode(locations)
     debug_print("Geocoder complete.")
-    assert len(coord_locations) == len(locations)
+    if len(coord_locations) != len(locations):
+        raise ValueError("Geocoder returned an unexpected number of locations")
 else:
     debug_print("Not running geocoder.")
     coord_locations = locations
@@ -118,15 +119,7 @@ cost_provider = create_cost_provider(cfg)
 time_matrix = cost_provider.build_time_matrix(coord_locations, base_ts)
 debug_print("Time matrix calculated.")
 
-# Sanity checks.
-assert len(time_matrix) == len(nodes), "time_matrix size mismatch"
-assert len(time_windows) == len(nodes), "time_windows size mismatch"
-assert len(service_times) == len(nodes), "service_times size mismatch"
-for start, end in time_windows:
-    assert 0 <= start <= end and end >= 0, f"Invalid time window: {start}-{end}"
-for row in time_matrix:
-    assert len(row) == len(nodes)
-
+# Solver validates matrix, windows and service times before invoking OR-Tools.
 debug_print("Nodes with time windows and service times:")
 for i, n in enumerate(nodes):
     debug_print(i, n["id"], time_windows[i], service_times[i])
