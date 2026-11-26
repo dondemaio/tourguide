@@ -92,3 +92,18 @@ def test_invalid_priority(priority):
     data["stops"][0].update(required=False, priority=priority)
     with pytest.raises(ValueError, match="priority"):
         prepare_plan(data)
+
+
+@pytest.mark.parametrize("window", [None, "09:00", [], ["2026-11-23T09:00"], [None, None]])
+def test_invalid_endpoint_window(window):
+    data = plan(["09:00-10:00"])
+    data["start"]["time_window"] = window
+    with pytest.raises(ValueError):
+        prepare_plan(data)
+
+
+def test_invalid_timezone():
+    data = plan(["09:00-10:00"])
+    data["timezone"] = "Invalid/Zone"
+    with pytest.raises(ValueError, match="timezone"):
+        prepare_plan(data)
