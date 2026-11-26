@@ -77,6 +77,8 @@ def review_import(text, format, repository):
             else:
                 status = "new"
             seen.add(key)
+            if status == "new":
+                existing[key] = record
             candidates.append(ImportCandidate(index, status, record))
         except (ValueError, TypeError) as exc:
             candidates.append(ImportCandidate(index, "invalid", None, str(exc)))
@@ -94,6 +96,9 @@ def commit_import(candidates, selected_indices, repository):
             results.append(ImportCandidate(candidate.index, "rejected", candidate.record, "Not a new record"))
             continue
         try:
+            current = review_import(yaml.safe_dump([candidate.record]), "yaml", repository)[0]
+            if current.status != "new":
+                raise ValueError(f"Import candidate is now {current.status}")
             repository.add(candidate.record)
             results.append(ImportCandidate(candidate.index, "added", candidate.record))
         except ValueError as exc:
