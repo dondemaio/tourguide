@@ -8,3 +8,5 @@ The API retains the configured rendering output. For OSRM cost calculations it a
 Leaflet 1.9.4 is loaded from unpkg with integrity checks; OpenStreetMap tiles are requested from the browser. Internet access is required for the map library and basemap, and tile requests disclose the viewed map area to the tile service. The itinerary works without Leaflet. No separate frontend build or container is required.
 
 Plan editing, saved plans and destination management UI remain later roadmap tasks. This is a trusted local application, not a public deployment.
+
+The loaded plan preview lists destinations in input order. Identical coordinates share a marker; Leaflet.markercluster 1.5.3 (also loaded from unpkg) groups nearby markers and spiderfies at maximum zoom. Visible labels are filtered for collisions, prioritizing the selected marker. If the cluster plugin fails to load, individual markers and collision filtering remain available.
