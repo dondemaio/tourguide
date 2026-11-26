@@ -1,6 +1,7 @@
 import csv
 import io
-import json
+from uuid import uuid4
+from threading import Lock
 from dataclasses import dataclass
 
 import yaml
@@ -8,8 +9,8 @@ import yaml
 from destinations import validate_destination
 
 
-FIELDS = ("id", "name", "location", "website", "opening_hours", "provider_ids", "tags", "provenance")
-NESTED = {"opening_hours", "provider_ids", "tags", "provenance"}
+FIELDS = ("name", "address", "website", "opening hours", "notes")
+_CSV_LOCK = Lock()
 MAX_INPUT = 2_000_000
 
 
@@ -31,29 +32,43 @@ def _parse(text, format):
         return records
     if format != "csv":
         raise ValueError("Unsupported exchange format")
-    reader = csv.DictReader(io.StringIO(text), strict=True)
-    if not reader.fieldnames or not {"id", "name"} <= set(reader.fieldnames):
-        raise ValueError("CSV requires id and name columns")
-    if len(set(reader.fieldnames)) != len(reader.fieldnames) or set(reader.fieldnames) - set(FIELDS):
-        raise ValueError("Invalid CSV columns")
-    records = []
-    for row in reader:
+    return parse_csv_candidates(text)
+
+
+def parse_csv_candidates(text):
+    """Return candidate records, preserving unverified hours and notes."""
+    if len(text.encode("utf-8")) > MAX_INPUT:
+        raise ValueError("Import exceeds size limit")
+    text = text.removeprefix("\ufeff")
+    with _CSV_LOCK:
+        previous = csv.field_size_limit(MAX_INPUT)
         try:
-            if None in row or any(value is None for value in row.values()):
-                raise ValueError("CSV row has incorrect number of fields")
-            record = {}
-            for key, value in row.items():
-                if not value:
+            delimiter = csv.Sniffer().sniff(text.splitlines()[0], delimiters=",;").delimiter if text.strip() and any(ch in text.splitlines()[0] for ch in ",;") else ","
+            reader = csv.DictReader(io.StringIO(text), delimiter=delimiter, strict=True)
+            reader.fieldnames = [key.strip().casefold() for key in (reader.fieldnames or [])]
+            if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames) or set(reader.fieldnames) - set(FIELDS):
+                raise ValueError("Invalid CSV columns")
+            records = []
+            for row in reader:
+                if None in row or any(value is None for value in row.values()):
+                    records.append(ValueError("CSV row has incorrect number of fields"))
                     continue
-                if key in NESTED:
-                    record[key] = json.loads(value)
-                else:
-                    # Reverse spreadsheet-safe escaping from our exporter.
-                    record[key] = value[1:] if value.startswith("'") and value[1:2] in ("=", "+", "-", "@", "\t", "\r", "\n", "'") else value
-            records.append(record)
-        except ValueError as exc:
-            records.append(exc)
-    return records
+                values = {key: value.strip() for key, value in row.items() if value.strip()}
+                if not any(values.get(key) for key in ("name", "address", "website")):
+                    records.append(ValueError("Candidate needs a name, address or website"))
+                    continue
+                record = {"id": str(uuid4()), "name": values.get("name") or values.get("address") or values["website"]}
+                if values.get("address"):
+                    record["location"] = values["address"]
+                if values.get("website"):
+                    record["website"] = values["website"]
+                record["provenance"] = {"candidate": values}
+                records.append(record)
+            return records
+        except csv.Error as exc:
+            raise ValueError(f"Invalid CSV: {exc}") from exc
+        finally:
+            csv.field_size_limit(previous)
 
 
 def review_import(text, format, repository):
@@ -116,11 +131,19 @@ def export_destinations(repository, format, ids=None):
     writer = csv.DictWriter(stream, fieldnames=FIELDS)
     writer.writeheader()
     for record in records:
-        row = {}
-        for key, value in record.items():
-            if key in NESTED:
-                row[key] = json.dumps(value, ensure_ascii=False, default=str)
-            else:
-                row[key] = "'" + value if value.startswith(("=", "+", "-", "@", "\t", "\r", "\n", "'")) else value
-        writer.writerow(row)
+        provenance = record.get("provenance")
+        candidate = provenance.get("candidate", {}) if isinstance(provenance, dict) else {}
+        hours = candidate.get("opening hours", "")
+        if "opening_hours" in record:
+            hours = "; ".join(
+                f"{entry.get('date', ', '.join(entry.get('days', [])))}"
+                + (f" (week {entry['week_of_month']})" if "week_of_month" in entry else "")
+                + ": " + (", ".join(entry["times"]) or "Closed")
+                for entry in record["opening_hours"]
+            )
+        row = {"name": record["name"], "address": record.get("location", ""),
+               "website": record.get("website", ""), "opening hours": hours,
+               "notes": candidate.get("notes", "")}
+        writer.writerow({key: "'" + value if value.startswith(("=", "+", "-", "@", "\t", "\r", "\n")) else value
+                         for key, value in row.items()})
     return stream.getvalue()
