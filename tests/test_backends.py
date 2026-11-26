@@ -108,3 +108,27 @@ def test_osrm_render_rejects_failed_route(monkeypatch):
     with pytest.raises(RuntimeError, match="NoRoute"):
         OSRMRouteRenderer("http://osrm", "geojson").build_route(
             ["A", "B"], ["8,47", "9,48"], [0, 1])
+
+
+def test_nominatim_public_delay_cannot_be_disabled():
+    with pytest.raises(ValueError, match="one second"):
+        NominatimGeocoder(delay=0)
+
+
+def test_nominatim_failed_request_still_delays(monkeypatch):
+    response = Mock()
+    response.raise_for_status.side_effect = RuntimeError("failed")
+    monkeypatch.setattr("backends.nominatim.geocode.requests.get", Mock(return_value=response))
+    sleep = Mock()
+    monkeypatch.setattr("backends.nominatim.geocode.time.sleep", sleep)
+    with pytest.raises(RuntimeError, match="failed"):
+        NominatimGeocoder().geocode(["Example"])
+    sleep.assert_called_once_with(1)
+
+
+def test_google_traffic_duration_without_fallback(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"status": "OK", "rows": [
+        {"elements": [{"status": "OK", "duration_in_traffic": {"value": 42}}]}]}
+    monkeypatch.setattr("backends.google.cost.requests.get", Mock(return_value=response))
+    assert GoogleCostProvider("dummy").build_time_matrix(["A"], 0) == [[42]]
