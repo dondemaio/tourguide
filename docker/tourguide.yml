@@ -5,6 +5,7 @@ services:
             dockerfile: docker/Dockerfile.tourguide
         volumes:
             - ../data/waypoints.yaml:/app/data/waypoints.yaml
+            - ../data/destinations.yaml:/app/data/destinations.yaml
             - ../data/config.yaml:/app/config.yaml
             - ../src:/app/src
         depends_on:
