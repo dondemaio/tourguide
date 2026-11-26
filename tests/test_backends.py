@@ -1,4 +1,3 @@
-import json
 from unittest.mock import Mock
 from urllib.parse import parse_qs, urlparse
 
@@ -33,12 +32,12 @@ def test_osrm_error(monkeypatch):
 def test_geojson_uses_ordered_coordinates(monkeypatch):
     geometry = {"type": "LineString", "coordinates": [[8, 47], [9, 48]]}
     response = Mock()
-    response.json.return_value = {"routes": [{"geometry": geometry}]}
+    response.json.return_value = {"code": "Ok", "routes": [{"geometry": geometry}]}
     get = Mock(return_value=response)
     monkeypatch.setattr("backends.osrm.render.requests.get", get)
     result = OSRMRouteRenderer("http://osrm", "geojson").build_route(
         ["End", "Start"], ["9,48", "8,47"], [1, 0])
-    assert json.loads(result) == {"type": "Feature", "geometry": geometry, "properties": {}}
+    assert result == {"type": "Feature", "geometry": geometry, "properties": {}}
     get.assert_called_once_with("http://osrm/route/v1/driving/8,47;9,48",
                                 params={"overview": "full", "geometries": "geojson", "steps": "true"},
                                 timeout=30)
@@ -100,3 +99,12 @@ def test_google_other_element_errors_remain_errors(monkeypatch):
     monkeypatch.setattr("backends.google.cost.requests.get", Mock(return_value=response))
     with pytest.raises(RuntimeError, match="Matrix element error"):
         GoogleCostProvider("dummy").build_time_matrix(["A"], 0)
+
+
+def test_osrm_render_rejects_failed_route(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"code": "NoRoute"}
+    monkeypatch.setattr("backends.osrm.render.requests.get", Mock(return_value=response))
+    with pytest.raises(RuntimeError, match="NoRoute"):
+        OSRMRouteRenderer("http://osrm", "geojson").build_route(
+            ["A", "B"], ["8,47", "9,48"], [0, 1])
