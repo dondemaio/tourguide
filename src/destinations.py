@@ -23,6 +23,20 @@ def validate_destination(record):
         opening_hours_to_time_windows(record["opening_hours"], date(2026, 1, 1))
     if set(record) - {"id", "name", "location", "website", "opening_hours", "provider_ids", "tags", "provenance"}:
         raise ValueError("Unknown destination fields")
+    if "provider_ids" in record and (not isinstance(record["provider_ids"], dict)
+            or any(not isinstance(k, str) or not isinstance(v, str)
+                   for k, v in record["provider_ids"].items())):
+        raise ValueError("provider_ids must map strings to strings")
+    if "tags" in record and (not isinstance(record["tags"], list)
+            or any(not isinstance(tag, str) for tag in record["tags"])):
+        raise ValueError("tags must be a list of strings")
+    if "provenance" in record:
+        provenance = record["provenance"]
+        if not isinstance(provenance, dict):
+            raise ValueError("provenance must be a mapping")
+        candidate = provenance.get("candidate", {})
+        if not isinstance(candidate, dict) or any(not isinstance(v, str) for v in candidate.values()):
+            raise ValueError("candidate provenance must contain string values")
     return deepcopy(record)
 
 
@@ -76,8 +90,14 @@ class YamlDestinationRepository:
 def resolve_plan(plan, repository: DestinationRepository):
     resolved = deepcopy(plan)
     stops = []
+    records = {record["id"]: record for record in repository.list()}
     for visit in resolved["stops"]:
-        destination = repository.get(visit["destination_id"])
+        if not isinstance(visit, dict) or not isinstance(visit.get("destination_id"), str):
+            raise ValueError("Visit requires a destination_id")
+        key = visit["destination_id"]
+        if key not in records:
+            raise ValueError(f"Unknown destination: {key}")
+        destination = deepcopy(records[key])
         if not destination.get("location"):
             raise ValueError(f"Destination {destination['id']} has no location")
         if set(visit) - {"destination_id", "service_minutes", "opening_hours", "required", "priority"}:
