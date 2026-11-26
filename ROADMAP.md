@@ -24,19 +24,21 @@ This is a living plan. Deliver small reviewable PRs targeting `develop`, keep th
 | #16 | Geographic discovery UI, candidate review and reuse of shared import service |
 | #17 | Website-based location enrichment, including incomplete imported records |
 | #18 | Verification and field-level change review UI |
-| #19+ | Advanced optimization, additional backends and multi-day trips |
+| #19+ | Advanced optimization, additional backends, multi-day trips and collaborative features (order to be decided) |
 
-Move through #2–10 quickly without overengineering. Prepare the shared application layer throughout. If caching, optional visits or date-range planning delay the first Web UI materially, defer them rather than blocking a usable product. The essential UI prerequisites are reliable solver behavior, reusable locations, structured results and callable application logic. Discovery is an early product priority, not a distant optional extension.
+Move through #2–10 quickly without overengineering. Prepare the shared application layer throughout. If caching, optional visits or date-range planning delay the first Web UI materially, defer them rather than blocking a usable product. The essential UI prerequisites are reliable solver behavior, reusable locations, structured results and callable application logic. Discovery is an early product priority, not a distant optional extension. Keep the existing CLI functional during the foundational PRs as a transitional entry point, but do not add CLI-specific features. The Web UI is the primary product interface and the REST API supports automation and integrations. Retire the CLI once the Web UI covers its existing functionality; retain infrastructure and administration scripts.
 
 ## Product milestones
 
-- **v0.1 — Reliable CLI:** validated inputs, reusable location data, solver correctness and structured results.
-- **v0.2 — Usable Web application:** select, edit, import and export locations, define trips, calculate routes, inspect itinerary and map. Retain CLI and Docker deployment.
+- **v0.1 — Reliable application foundation:** validated inputs, reusable location data, solver correctness and structured results.
+- **v0.2 — Usable Web application:** select, edit, import and export locations, define trips, calculate routes, inspect itinerary and map. Retain Docker deployment; retire the transitional CLI when its workflows are covered.
 - **v0.3 — Destination discovery:** search by term within a geographic area; show candidates with available metadata, review duplicates and import selected entries. Start with bounding box/radius and map viewport; expand area types later. Show coverage and provider limitations.
 - **v0.4 — Location enrichment and verification:** visit optional official websites to find missing addresses, hours and other attributes or detect changes. Present source-backed suggestions for approval; retain provenance and verification dates.
 - **v0.5 — Advanced planning:** distribute visits across independent day trips, then continuous multi-day trips with overnight stays.
 
 ## Feature backlog
+
+- Collaboration: shared destination repository, safe concurrent editing, personal and shared route plans, contributor identity and access control, change history and import provenance. Evaluate transactional persistence (e.g. SQLite) when needed; no database or authentication solution is committed yet. Keep YAML/CSV as exchange formats regardless of persistence.
 
 - Planning: fixed appointments, visit completion constraints, alternative destinations, precedence, travel/distance/waiting limits, configurable objectives and priorities.
 - Location data: weekly hours, special recurring hours, date-specific exceptions, tags, coordinates, inline destinations and per-trip overrides.
