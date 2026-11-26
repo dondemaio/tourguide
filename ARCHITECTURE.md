@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Tourguide is a locally deployable itinerary planner for reusable destinations, availability constraints and interchangeable routing services. The CLI and an early Web UI should use the same application logic.
+Tourguide is a locally deployable itinerary planner for reusable destinations, availability constraints and interchangeable routing services. The Web UI is the primary product interface for collaborative use; the REST API is the programmatic interface for automation and integrations. A dedicated application CLI is not a long-term product requirement.
 
 ## Current baseline
 
@@ -12,7 +12,7 @@ The Python application uses YAML configuration and waypoint input, OR-Tools for 
 
 ```mermaid
 flowchart TD
-    CLI[CLI] --> APP[Application services]
+    EXT[Scripts and external integrations] --> API[REST API]
     UI[Web UI] --> API[REST API]
     API --> APP
     APP --> LOC[Location repository]
@@ -24,10 +24,10 @@ flowchart TD
     BACK --> RENDER[Rendering]
     BACK --> DISC[Destination discovery]
     BACK --> ENRICH[Location enrichment]
-    LOC --> STORE[YAML storage]
+    LOC --> STORE[Persistence]
 ```
 
-Keep domain logic independent of HTTP, CLI, persistence and external providers. Extract application services incrementally rather than rewriting the existing application. Proposed initial Web stack: FastAPI, plain HTML/CSS/JavaScript, Leaflet, and Docker Compose. Keep the CLI functional. Use a configurable map tile provider with appropriate attribution and usage compliance.
+Keep domain logic independent of HTTP, CLI, persistence and external providers. Extract application services incrementally rather than rewriting the existing application. Proposed initial Web stack: FastAPI, plain HTML/CSS/JavaScript, Leaflet, and Docker Compose. Keep the existing CLI functional only as a transitional entry point until the Web UI covers its functionality. Do not invest in new CLI-specific features or maintain feature parity thereafter. Retire it once the Web UI is usable for the existing workflows. Retain independent application services and infrastructure/administration scripts such as the OSM downloader. Use a configurable map tile provider with appropriate attribution and usage compliance.
 
 ## Data and planning
 
@@ -51,11 +51,17 @@ Use a shared, source-independent import service for manually collected destinati
 
 Accept incomplete but identifiable destinations; missing attributes can be enriched later. Preview new records, identical duplicates, missing-field supplements, potential duplicates, conflicting values and invalid records. Allow selective approval and report record-level errors without blocking unrelated valid records. Do not silently overwrite existing values. Preserve provenance where available and assign stable IDs to new records.
 
-Export individual destinations, selected groups or the entire database. YAML exports must support lossless round trips, including nested opening hours, exceptions and provenance. Document CSV field mappings and any format limitations. Provide CLI/service support first, followed by Web UI file upload, pasted YAML/CSV, import review and export downloads. Automated discovery must reuse the same import workflow.
+Export individual destinations, selected groups or the entire database. YAML exports must support lossless round trips, including nested opening hours, exceptions and provenance. Document CSV field mappings and any format limitations. Provide application service support first, followed by Web UI file upload, pasted YAML/CSV, import review and export downloads. Automated discovery must reuse the same import workflow.
 
 ## Website enrichment and verification
 
 An optional website on a location is an input to enrichment (missing fields) and verification (existing fields). A dedicated backend may extract structured metadata such as JSON-LD, then relevant contact/opening-hours pages. More complex HTML, PDFs or LLM-assisted interpretation can follow. Return field-level proposed changes with source URLs, retrieval dates and uncertainty; never silently overwrite maintained records. Distinguish unreachable sources from confirmed closure. Limit requests, respect site policies, and protect server-side fetching against private-network access, unsafe redirects and unbounded responses. Treat retrieved content as untrusted data.
+
+## Collaborative use
+
+Plan for a shared destination repository, concurrent editing without lost updates, personal and shared route plans, contributor identity and access control, change history and import provenance. These are future requirements, not prerequisites for the initial Web UI. Before exposing the application to untrusted users, establish appropriate authentication, authorization and deployment protections.
+
+YAML is an initial persistence option; evaluate SQLite or another transactional store as collaborative requirements mature. Keep persistence behind repository interfaces and YAML/CSV exchange formats independent of internal storage. No specific authentication or database solution is selected yet.
 
 ## Deployment and quality
 
