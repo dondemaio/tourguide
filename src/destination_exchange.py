@@ -72,10 +72,14 @@ def parse_csv_candidates(text):
 
 
 def review_import(text, format, repository):
+    return _review_records(_parse(text, format), repository)
+
+
+def _review_records(records, repository):
     existing = {record["id"]: record for record in repository.list()}
     seen = set()
     candidates = []
-    for index, raw in enumerate(_parse(text, format)):
+    for index, raw in enumerate(records):
         try:
             if isinstance(raw, Exception):
                 raise raw
@@ -111,7 +115,7 @@ def commit_import(candidates, selected_indices, repository):
             results.append(ImportCandidate(candidate.index, "rejected", candidate.record, "Not a new record"))
             continue
         try:
-            current = review_import(yaml.safe_dump([candidate.record]), "yaml", repository)[0]
+            current = _review_records([candidate.record], repository)[0]
             if current.status != "new":
                 raise ValueError(f"Import candidate is now {current.status}")
             repository.add(candidate.record)
@@ -144,6 +148,6 @@ def export_destinations(repository, format, ids=None):
         row = {"name": record["name"], "address": record.get("location", ""),
                "website": record.get("website", ""), "opening hours": hours,
                "notes": candidate.get("notes", "")}
-        writer.writerow({key: "'" + value if value.startswith(("=", "+", "-", "@", "\t", "\r", "\n")) else value
+        writer.writerow({key: "'" + value if (value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(("=", "+", "-", "@"))) else value
                          for key, value in row.items()})
     return stream.getvalue()
