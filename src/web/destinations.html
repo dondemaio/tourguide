@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Destinations — Tourguide</title><link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/destinations.css"><script defer src="/static/destinations.js"></script></head>
+<body><header><h1>Tourguide</h1><nav><a href="/">Route planner</a> · <a href="/destinations" aria-current="page">Destinations</a> · <a href="/docs">API documentation</a></nav></header>
+<main><p id="notice" role="status" aria-live="polite">Loading destinations…</p>
+<section class="panel"><div class="toolbar"><h2>Destination catalog</h2><div class="actions"><button id="reload" type="button">Refresh</button><button id="new" type="button">+ New destination</button></div></div>
+<label>Search <input id="search" type="search" placeholder="Name, address, ID or tag"></label><p id="count"></p>
+<div class="table-scroll"><table><thead><tr><th scope="col">Name / ID</th><th scope="col">Location</th><th scope="col">Tags</th><th scope="col">Actions</th></tr></thead><tbody id="records"></tbody></table></div>
+</section>
+<dialog id="drawer" aria-labelledby="editor-title"><div class="toolbar"><h2 id="editor-title">New destination</h2><button id="close" type="button" aria-label="Close editor">×</button></div><p id="editor-error" class="error" role="alert"></p><form id="editor">
+<label>ID <input id="record-id" required pattern="[A-Za-z0-9_\-][A-Za-z0-9_.\-]*"></label>
+<label>Name <input id="name" required></label><label>Address or longitude,latitude <input id="location"></label>
+<label>Website <input id="website"></label><label>Tags (one per line)<textarea id="tags" rows="3"></textarea></label>
+<fieldset><legend>Opening hours</legend><p>Empty means unspecified. Each rule has weekdays or a date, and time intervals. Empty intervals mean closed.</p><div id="hours"></div><button type="button" id="add-hours">Add rule</button></fieldset>
+<details><summary>Advanced metadata</summary><label>Provider IDs (JSON object)<textarea id="provider-ids" rows="3"></textarea></label><label>Provenance (JSON object)<textarea id="provenance" rows="4"></textarea></label></details>
+<div class="actions"><button type="submit">Save destination</button><button type="button" id="cancel">Cancel</button></div></form></dialog>
+</main></body></html>
