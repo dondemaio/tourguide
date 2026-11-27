@@ -1,9 +1,7 @@
-# Destination management
+# Destination catalog
 
-Open /destinations using the navigation bar. Search the repository by name, ID, address or tags. Create, edit and delete records. IDs are generated for new records and immutable after creation. Opening hours support weekday rules, optional week of month and specific dates. Provider IDs and provenance are editable JSON objects. The server validates all records.
+Open /destinations from the navigation bar. The full-width catalog loads existing records immediately and supports search by name, address, ID and tags. Refresh retries loading. New destination and pencil icons open the same right-hand modal drawer; trash icons delete after confirmation. Search remains intact when the drawer closes. Escape and Cancel confirm discarding unsaved edits. Opening hours support weekdays, week of month and specific dates. Advanced metadata uses JSON objects. IDs are immutable after creation.
 
-Select records for export or export all. YAML preserves structured metadata; CSV is a simplified exchange format. Import accepts pasted YAML/CSV or a local file up to 2 MB. Review candidates, inspect details and select new records explicitly before committing. Conflicts, duplicates and invalid candidates cannot be committed; the server rechecks selected records. CSV opening hours and notes remain unverified provenance.
+Import/export UI is postponed; existing REST endpoints remain available. No new dependencies. The app remains local and single-user. Deletion can invalidate plans and warns accordingly.
 
-Deleting a destination may invalidate a plan; the UI warns before deletion. The application remains local and single-user. No new frontend dependencies. Plan editing, discovery and enrichment remain separate tasks.
-
-Browser QA: create/edit/delete a disposable record, verify opening rules and metadata survive editing, search and export selected records, review mixed valid/invalid/duplicate candidates, commit only selected new records, reload and verify persistence. Check cancel and unsaved changes warning.
+QA: verify initial catalog loading, including HTTP access from another device; search, create/edit/delete a disposable record, verify metadata and opening hours persist, check Escape/Cancel and reload persistence. Verify error reporting and Refresh after a failed list request.
